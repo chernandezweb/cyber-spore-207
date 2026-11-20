@@ -310,7 +310,7 @@ export class GameEngine {
     const name = STAGE_NAMES[(this.stage - 1) % STAGE_NAMES.length];
     setText('hud-stage-num', `STAGE ${String(this.stage).padStart(2, '0')}`);
     setText('hud-stage-name', name);
-    setText('hud-obj-text', 'Survive the horde! Activate the Bio-Monolith [E] to charge!');
+    setText('hud-obj-text', '[E] ACTIVATE BIO-MONOLITH');
     document.getElementById('hud-tp-bar-wrap')?.classList.add('hidden');
     document.getElementById('hud-boss-bar')?.classList.add('hidden');
     this.spawnBurst(this.player.x, this.player.y, '#00f3ff', 36, 300);
@@ -1319,7 +1319,7 @@ export class GameEngine {
       this.boss = this.spawnEnemy('bowser_boss', bx, by);
       soundEngine.playBossRoar();
       this.shake = 22;
-      setText('hud-obj-text', 'DEFEND THE BIO-MONOLITH! Stay in ring and slay Bowser-Leviathan!');
+      setText('hud-obj-text', 'DEFEND RING & SLAY BOSS!');
       document.getElementById('hud-tp-bar-wrap')?.classList.remove('hidden');
       document.getElementById('hud-boss-bar')?.classList.remove('hidden');
     } else if (tp.state === 'portal_open' && d < 140) {
@@ -1355,7 +1355,7 @@ export class GameEngine {
       for (const en of this.enemies) if (!en.isDead) this.killEnemy(en);
       this.shake = 16;
       soundEngine.playRelicPickup();
-      setText('hud-obj-text', 'PORTAL OPEN — enter the monolith and press [E] to advance!');
+      setText('hud-obj-text', 'PORTAL OPEN — PRESS [E] TO WARP!');
       this.addDamageNumber(tp.x, tp.y - 40, 'PORTAL OPEN', '#00f3ff', 2);
     }
   }

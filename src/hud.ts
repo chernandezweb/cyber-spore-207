@@ -2,12 +2,12 @@
 import type { RelicItem } from './types';
 
 const DIFF_LABELS = [
-  'EASY // CALM SPORES',
-  'MEDIUM // RISING BLOOM',
-  'HARD // NEON STORM',
-  'VERY HARD // HIVE AWAKENS',
-  'INSANE // VOID SURGE',
-  'HAHAHA 207 // I SEE YOU',
+  'EASY',
+  'MEDIUM',
+  'HARD',
+  'VERY HARD',
+  'INSANE',
+  'HAHAHA 207',
 ];
 const DIFF_COLORS = ['#22e58a', '#a6ff33', '#ffd23f', '#ff8528', '#ff3355', '#ff4de1'];
 
@@ -38,7 +38,7 @@ export function updateHUD(e: any) {
   set('hud-timer', `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`);
   set('hud-fps', `${e.fps || 60} FPS`);
   const c = e.coeff;
-  set('hud-coeff', `COEFF ${c.toFixed(2)}x`);
+  set('hud-coeff', `${c.toFixed(2)}x`);
 
   const tier = Math.min(5, Math.floor((c - 1) / 0.55));
   const marker = document.getElementById('hud-diff-marker') as HTMLElement | null;
@@ -59,7 +59,7 @@ export function updateHUD(e: any) {
 
   width('hud-xp-fill', (p.xp / p.xpToNext) * 100);
   set('hud-level', String(p.level));
-  set('hud-stats-summary', `DPS x${p.stats.damageMult.toFixed(2)} | ROF ${Math.round(p.stats.attackSpeed * 100)}% | CRIT ${Math.round(p.stats.critRate * 100)}% | SPD ${Math.round(p.moveSpeed)}`);
+  set('hud-stats-summary', `DMG x${p.stats.damageMult.toFixed(2)} · CRIT ${Math.round(p.stats.critRate * 100)}% · SPD ${Math.round(p.moveSpeed)}`);
 
   // Boxhead Weapon Hotbar (1-7)
   for (let i = 0; i < p.weaponOrder.length; i++) {

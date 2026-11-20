@@ -38,11 +38,10 @@
           </div>
         </div>
         <div class="objective-box" id="hud-objective">
-          <div class="obj-header">OBJECTIVE // BOXHEAD PROTOCOL</div>
-          <div class="obj-text" id="hud-obj-text">Survive the horde! Activate the Bio-Monolith [E] to charge!</div>
+          <div class="obj-text" id="hud-obj-text">[E] ACTIVATE BIO-MONOLITH</div>
           <div class="teleporter-progress-wrap hidden" id="hud-tp-bar-wrap">
             <div class="teleporter-progress-fill" id="hud-tp-bar-fill"></div>
-            <span class="teleporter-progress-label" id="hud-tp-label">CHARGING CONDUIT: 0%</span>
+            <span class="teleporter-progress-label" id="hud-tp-label">CHARGING: 0%</span>
           </div>
         </div>
       </div>
@@ -51,7 +50,7 @@
       <div id="hud-boss-bar" class="hidden">
         <div class="boss-title-row">
           <span class="boss-name" id="boss-name">BOWSER-LEVIATHAN 207</span>
-          <span class="boss-sub" id="boss-subtitle">APEX DEVIL TITAN OF THE NEON VOID</span>
+          <span class="boss-sub" id="boss-subtitle">APEX TITAN</span>
         </div>
         <div class="boss-hp-track">
           <div class="boss-hp-lag" id="boss-hp-lag"></div>
@@ -60,44 +59,46 @@
         </div>
       </div>
 
-      <!-- Top-Right HUD: Risk of Rain 2 Escalating Difficulty Meter & Utility Toggles -->
-      <div id="hud-top-right" class="hud-panel hidden">
-        <div class="ror-diff-box">
-          <div class="diff-clock-row">
-            <span class="diff-timer" id="hud-timer">00:00</span>
-            <span class="diff-fps" id="hud-fps">60 FPS</span>
-            <span class="diff-stage-mult" id="hud-coeff">COEFF 1.00x</span>
-          </div>
-          <div class="diff-bar-outer">
-            <div class="diff-segments">
-              <span class="seg s-easy">EASY</span>
-              <span class="seg s-med">MEDIUM</span>
-              <span class="seg s-hard">HARD</span>
-              <span class="seg s-vhard">V.HARD</span>
-              <span class="seg s-insane">INSANE</span>
-              <span class="seg s-207">HAHAHA 207</span>
+      <!-- Top-Right Stack: Difficulty Panel + Relic Ribbon (Flex column = ZERO overlap!) -->
+      <div id="hud-right-stack">
+        <div id="hud-top-right" class="hud-panel hidden">
+          <div class="ror-diff-box">
+            <div class="diff-clock-row">
+              <span class="diff-timer" id="hud-timer">00:00</span>
+              <span class="diff-fps" id="hud-fps">60 FPS</span>
+              <span class="diff-stage-mult" id="hud-coeff">1.00x</span>
             </div>
-            <div class="diff-marker" id="hud-diff-marker">▲</div>
+            <div class="diff-bar-outer">
+              <div class="diff-segments">
+                <span class="seg s-easy">EASY</span>
+                <span class="seg s-med">MED</span>
+                <span class="seg s-hard">HARD</span>
+                <span class="seg s-vhard">V.HRD</span>
+                <span class="seg s-insane">INSN</span>
+                <span class="seg s-207">207</span>
+              </div>
+              <div class="diff-marker" id="hud-diff-marker">▲</div>
+            </div>
+            <div class="diff-current-badge" id="hud-diff-label">EASY</div>
           </div>
-          <div class="diff-current-badge" id="hud-diff-label">EASY // CALM SPORES</div>
+          <div class="quick-actions-row">
+            <button id="btn-toggle-ai" class="hud-mini-btn" title="Toggle AI Auto-Pilot [F4]">
+              AI: <span id="ai-status-text">OFF</span>
+            </button>
+            <button id="btn-toggle-audio" class="hud-mini-btn" title="Toggle Sound [M]">
+              SFX: <span id="audio-status-text">ON</span>
+            </button>
+            <button id="btn-return-menu" class="hud-mini-btn" title="Main Menu [ESC]">
+              MENU
+            </button>
+          </div>
         </div>
-        <div class="quick-actions-row">
-          <button id="btn-toggle-ai" class="hud-mini-btn" title="Toggle AI Auto-Pilot Tester [F4]">
-            🤖 AI PILOT: <span id="ai-status-text">OFF</span>
-          </button>
-          <button id="btn-toggle-audio" class="hud-mini-btn" title="Toggle Sound [M]">
-            🔊 AUDIO: <span id="audio-status-text">ON</span>
-          </button>
-          <button id="btn-return-menu" class="hud-mini-btn" title="Return to Main Menu [ESC]">
-            ⌂ MENU
-          </button>
-        </div>
-      </div>
 
-      <!-- Top Relic Item Inventory Ribbon (Risk of Rain 2 Stackable Items) -->
-      <div id="hud-item-ribbon" class="hidden">
-        <div class="ribbon-label">RELIC SYNERGIES</div>
-        <div id="hud-items-list" class="items-grid"></div>
+        <!-- Relic & Synergy Ribbon (Cleanly below Top-Right panel, never overlaps) -->
+        <div id="hud-item-ribbon" class="hidden">
+          <div class="ribbon-label">RELICS &amp; PERKS</div>
+          <div id="hud-items-list" class="items-grid"></div>
+        </div>
       </div>
 
       <!-- Pickup Notification Banner -->
@@ -134,7 +135,7 @@
           <div class="skill-slot weapon-slot active" id="weapon-slot-0" title="[1] Dual Plasma Pistols">
             <div class="skill-key">1</div>
             <div class="skill-icon">🔫</div>
-            <div class="skill-name">PISTOLS</div>
+            <div class="skill-name">PISTOL</div>
             <div class="weapon-ammo" id="weapon-ammo-0">∞</div>
           </div>
           <div class="skill-slot weapon-slot" id="weapon-slot-1" title="[2] Neon Shotgun">
@@ -152,25 +153,25 @@
           <div class="skill-slot weapon-slot" id="weapon-slot-3" title="[4] Spore Grenades">
             <div class="skill-key">4</div>
             <div class="skill-icon">💣</div>
-            <div class="skill-name">GRENADES</div>
+            <div class="skill-name">GRENADE</div>
             <div class="weapon-ammo" id="weapon-ammo-3">10</div>
           </div>
           <div class="skill-slot weapon-slot" id="weapon-slot-4" title="[5] Plasma Rockets">
             <div class="skill-key">5</div>
             <div class="skill-icon">🚀</div>
-            <div class="skill-name">ROCKETS</div>
+            <div class="skill-name">ROCKET</div>
             <div class="weapon-ammo" id="weapon-ammo-4">8</div>
           </div>
           <div class="skill-slot weapon-slot barrel-slot" id="weapon-slot-5" title="[6 or Space] Place Explosive Barrel">
-            <div class="skill-key">6 / Space</div>
+            <div class="skill-key">SPC</div>
             <div class="skill-icon">🛢️</div>
             <div class="skill-name">BARREL</div>
             <div class="weapon-ammo" id="weapon-ammo-5">6</div>
           </div>
           <div class="skill-slot weapon-slot barricade-slot" id="weapon-slot-6" title="[7 or F] Place Cyber Barricade">
-            <div class="skill-key">7 / F</div>
+            <div class="skill-key">F</div>
             <div class="skill-icon">🛡️</div>
-            <div class="skill-name">BARRICADE</div>
+            <div class="skill-name">WALL</div>
             <div class="weapon-ammo" id="weapon-ammo-6">8</div>
           </div>
 
@@ -178,7 +179,7 @@
           <div class="skill-slot special-slot" id="special-slot" title="[R] Special Ultimate">
             <div class="skill-key">R</div>
             <div class="skill-icon">⭐</div>
-            <div class="skill-name">SPECIAL</div>
+            <div class="skill-name">ULT</div>
             <div class="skill-cd-overlay hidden" id="skill-cd-3"></div>
           </div>
         </div>
