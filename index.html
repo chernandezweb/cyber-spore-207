@@ -192,97 +192,92 @@
 
         <div class="menu-container">
           <header class="menu-header">
-            <div class="platform-badges">
-              <span class="p-badge cyan">2.5D BOXHEAD TOP-DOWN ARENA</span>
-              <span class="p-badge magenta">BOXHEAD ZOMBIE WARS × RISK OF RAIN 2</span>
-              <span class="p-badge lime" id="runtime-badge">WEB &amp; TAURI STEAM-READY BUILD v0.207</span>
-            </div>
             <h1 class="game-logo">
               <span class="logo-cyber">CYBER-SPORE</span>
               <span class="logo-207">207</span>
             </h1>
-            <p class="game-tagline">BOXHEAD ZOMBIE WARS // 2.5D TOP-DOWN ACTION ROGUELIKE</p>
+            <p class="game-tagline">2.5D PIXEL ARENA SHOOTER</p>
           </header>
 
           <div class="menu-grid">
-            <!-- Left Column: Survivor Select -->
+            <!-- Left Column: Big, Clear Survivor Select -->
             <section class="menu-card survivor-select-panel">
-              <h2 class="panel-title">01 // SELECT YOUR BOXHEAD SURVIVOR</h2>
+              <h2 class="panel-title">CHOOSE SURVIVOR</h2>
               <div class="survivor-cards" id="survivor-cards-container">
-                <div class="surv-card selected" data-survivor="vanguard">
+                <button type="button" class="surv-card selected" data-survivor="vanguard">
                   <div class="surv-portrait portrait-vanguard" style="background-image: url('./assets/hero-spritesheet.jpg');"></div>
                   <div class="surv-info">
                     <div class="surv-header">
                       <h3>VANGUARD-207</h3>
-                      <span class="surv-role">SOLAR COMMANDO</span>
+                      <span class="surv-role">TANK</span>
                     </div>
-                    <p class="surv-desc">Heavy Boxhead Enforcer with reinforced armor, dual plasma pistols, explosive rockets, and Starman Overdrive invulnerability.</p>
-                    <div class="surv-stats">
-                      <span>HP: 150</span> • <span>ARMOR: 15</span> • <span>DASH CD: 2.5s</span>
+                    <div class="surv-stat-chips">
+                      <span class="s-chip hp">150 HP</span>
+                      <span class="s-chip">15 ARMOR</span>
+                      <span class="s-chip ult">⭐ OVERDRIVE</span>
                     </div>
                   </div>
-                </div>
+                </button>
 
-                <div class="surv-card" data-survivor="phantom">
+                <button type="button" class="surv-card" data-survivor="phantom">
                   <div class="surv-portrait portrait-phantom" style="background-image: url('./assets/hero-spritesheet.jpg');"></div>
                   <div class="surv-info">
                     <div class="surv-header">
                       <h3>PHANTOM-X</h3>
-                      <span class="surv-role">BIO-RANGER SNIPER</span>
+                      <span class="surv-role">SNIPER</span>
                     </div>
-                    <p class="surv-desc">High-Tech Boxhead Scout with high critical chance, rapid Cyber-SMG, and Tesla Singularity Vortex pulling swarms.</p>
-                    <div class="surv-stats">
-                      <span>HP: 120</span> • <span>CRIT: 22%</span> • <span>SPEED: +10%</span>
+                    <div class="surv-stat-chips">
+                      <span class="s-chip hp">120 HP</span>
+                      <span class="s-chip">22% CRIT</span>
+                      <span class="s-chip ult">⚡ VORTEX</span>
                     </div>
                   </div>
-                </div>
+                </button>
 
-                <div class="surv-card" data-survivor="huntress">
+                <button type="button" class="surv-card" data-survivor="huntress">
                   <div class="surv-portrait portrait-huntress" style="background-image: url('./assets/hero-spritesheet.jpg');"></div>
                   <div class="surv-info">
                     <div class="surv-header">
                       <h3>SPORE-HUNTRESS</h3>
-                      <span class="surv-role">NEON ASSASSIN</span>
+                      <span class="surv-role">ASSASSIN</span>
                     </div>
-                    <p class="surv-desc">Hyper-agile Boxhead Valkyrie with Neon Shotgun, rapid dash cooldown, and 12-blade orbiting Blade Storm.</p>
-                    <div class="surv-stats">
-                      <span>HP: 105</span> • <span>SPEED: +20%</span> • <span>DASH CD: 1.5s</span>
+                    <div class="surv-stat-chips">
+                      <span class="s-chip hp">105 HP</span>
+                      <span class="s-chip">+20% SPD</span>
+                      <span class="s-chip ult">🌪️ BLADES</span>
                     </div>
                   </div>
-                </div>
+                </button>
               </div>
             </section>
 
-            <!-- Right Column: Key Art Preview, Controls & Launch -->
+            <!-- Right Column: Art, Simple Controls & Big Play Button -->
             <section class="menu-card launch-panel">
               <div class="cover-preview-frame">
                 <img src="./assets/title-cover.jpg" alt="CYBER-SPORE 207 Key Art" class="cover-img" />
                 <div class="cover-caption">
-                  <span>✨ 2.5D Top-Down Boxhead Arena Universe</span>
-                  <button id="btn-open-codex" class="codex-btn">📖 VIEW BESTIARY &amp; RELIC CODEX</button>
+                  <span class="caption-tag">SECTOR 207</span>
+                  <button id="btn-open-codex" class="codex-btn" type="button">📖 RELIC CODEX</button>
                 </div>
               </div>
 
               <div class="controls-guide">
-                <h2 class="panel-title">02 // BOXHEAD CONTROLS &amp; WEAPONS</h2>
+                <h2 class="panel-title">CONTROLS</h2>
                 <div class="keys-grid">
-                  <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 8-Way Move</div>
-                  <div><kbd>MOUSE</kbd> 360° Aim &amp; Shoot</div>
-                  <div><kbd>1</kbd> - <kbd>7</kbd> / <kbd>SCROLL</kbd> Switch Weapons</div>
-                  <div><kbd>SPACE</kbd> Place Explosive Barrel!</div>
-                  <div><kbd>F</kbd> Place Cyber Barricade!</div>
-                  <div><kbd>SHIFT</kbd> / <kbd>RMB</kbd> Dash / Dodge</div>
-                  <div><kbd>R</kbd> Special Ultimate</div>
-                  <div><kbd>E</kbd> Activate Teleporter</div>
+                  <div><kbd>WASD</kbd> Move</div>
+                  <div><kbd>MOUSE</kbd> Aim &amp; Shoot</div>
+                  <div><kbd>1-7</kbd> Weapons</div>
+                  <div><kbd>SPACE</kbd> Barrel</div>
+                  <div><kbd>F</kbd> Barricade</div>
+                  <div><kbd>SHIFT</kbd> Dash</div>
+                  <div><kbd>R</kbd> Ultimate</div>
+                  <div><kbd>E</kbd> Portal</div>
                 </div>
               </div>
 
               <div class="launch-buttons">
-                <button id="btn-start-run" class="btn-primary-launch">
-                  ▶ DEPLOY INTO SECTOR 207
-                </button>
-                <button id="btn-start-ai-demo" class="btn-secondary-launch">
-                  🤖 LAUNCH AI AUTO-PILOT SHOWCASE
+                <button id="btn-start-run" class="btn-primary-launch" type="button">
+                  ▶ DEPLOY NOW
                 </button>
               </div>
             </section>

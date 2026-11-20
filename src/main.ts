@@ -7,11 +7,10 @@ import type { SurvivorId, UpgradeCard } from './types';
 let selectedSurvivor: SurvivorId = 'vanguard';
 let engine: GameEngine | null = null;
 
-window.addEventListener('DOMContentLoaded', () => {
+function initApp() {
   const canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
   engine = new GameEngine(canvas);
 
-  detectPlatform();
   populateCodex();
   setupMenuBindings();
 
@@ -26,7 +25,13 @@ window.addEventListener('DOMContentLoaded', () => {
   engine.onGameOver = (stats) => {
     showGameOverScreen(stats);
   };
-});
+}
+
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
 
 function renderUpgradeDraftModal(cards: UpgradeCard[], title: string, subtitle: string) {
   const modal = document.getElementById('upgrade-draft-modal');
@@ -78,20 +83,6 @@ function renderUpgradeDraftModal(cards: UpgradeCard[], title: string, subtitle: 
   modal.classList.remove('hidden');
 }
 
-function detectPlatform() {
-  const badge = document.getElementById('runtime-badge');
-  if (!badge) return;
-
-  const isTauri = !!(window as any).__TAURI__ || !!(window as any).__TAURI_INTERNALS__;
-  if (isTauri) {
-    badge.textContent = 'STEAM / TAURI PIXEL RUNTIME v0.207';
-    badge.className = 'p-badge lime';
-  } else {
-    badge.textContent = '2.5D PIXEL-ART WEB BUILD v0.207';
-    badge.className = 'p-badge cyan';
-  }
-}
-
 function setupMenuBindings() {
   for (let i = 0; i <= 6; i++) {
     const slot = document.getElementById(`weapon-slot-${i}`);
@@ -107,17 +98,17 @@ function setupMenuBindings() {
     }
   });
 
-  const survCards = document.querySelectorAll('.surv-card');
-  survCards.forEach((card) => {
-    card.addEventListener('click', () => {
-      survCards.forEach((c) => c.classList.remove('selected'));
-      card.classList.add('selected');
-      selectedSurvivor = (card.getAttribute('data-survivor') as SurvivorId) || 'vanguard';
-    });
+  // Bulletproof Survivor Selection via event delegation on container
+  const survContainer = document.getElementById('survivor-cards-container');
+  survContainer?.addEventListener('click', (ev) => {
+    const card = (ev.target as HTMLElement | null)?.closest('.surv-card') as HTMLElement | null;
+    if (!card) return;
+    survContainer.querySelectorAll('.surv-card').forEach((c) => c.classList.remove('selected'));
+    card.classList.add('selected');
+    selectedSurvivor = (card.getAttribute('data-survivor') as SurvivorId) || 'vanguard';
   });
 
   document.getElementById('btn-start-run')?.addEventListener('click', () => startGame(false));
-  document.getElementById('btn-start-ai-demo')?.addEventListener('click', () => startGame(true));
   document.getElementById('btn-toggle-ai')?.addEventListener('click', () => engine?.toggleAI());
   document.getElementById('btn-toggle-audio')?.addEventListener('click', () => engine?.toggleAudio());
   document.getElementById('btn-return-menu')?.addEventListener('click', () => returnToMenu());
@@ -149,6 +140,12 @@ function setupMenuBindings() {
 
 function startGame(withAi: boolean) {
   if (!engine) return;
+
+  // Always read the currently highlighted survivor card as source of truth
+  const activeCard = document.querySelector('#survivor-cards-container .surv-card.selected');
+  if (activeCard) {
+    selectedSurvivor = (activeCard.getAttribute('data-survivor') as SurvivorId) || selectedSurvivor;
+  }
 
   document.getElementById('main-menu-overlay')?.classList.add('hidden');
   document.getElementById('gameover-modal')?.classList.add('hidden');
