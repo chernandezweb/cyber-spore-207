@@ -1,6 +1,7 @@
 // CYBER-SPORE 207 // Dead Cells-Style 3-Card Upgrade & Affix Drafting System
+// Clean, scannable, big-number cards designed to be read in <0.5s mid-combat.
 import { ALL_RELIC_ITEMS } from './items';
-import type { UpgradeCard, UpgradeRarity } from './types';
+import type { UpgradeCard, UpgradeRarity, UpgradeStat } from './types';
 
 export type DraftSource = 'levelup' | 'relic' | 'boss_relic' | 'stage_clear';
 
@@ -11,69 +12,31 @@ interface AffixDef {
 }
 
 const BONUS_AFFIX_POOL: AffixDef[] = [
-  {
-    id: 'bleed_bonus',
-    label: '★ +70% bonus damage to bleeding targets',
-    apply: (p) => { p.affixes.bonusVsBleeding += 0.70; },
-  },
-  {
-    id: 'burn_bonus',
-    label: '★ +65% bonus damage to burning targets',
-    apply: (p) => { p.affixes.bonusVsBurning += 0.65; },
-  },
-  {
-    id: 'burn_death',
-    label: '★ Victims explode into flames when they die',
-    apply: (p) => { p.affixes.burnOnDeath += 1; },
-  },
-  {
-    id: 'crit_zap',
-    label: '★ Critical hits fire chain-lightning arcs',
-    apply: (p) => { p.affixes.critLightning += 1; },
-  },
-  {
-    id: 'vamp_kill',
-    label: '★ Kills restore +4 HP & shave 0.25s off Dash CD',
-    apply: (p) => { p.affixes.vampOnKill += 4; },
-  },
-  {
-    id: 'pierce_plus',
-    label: '★ All projectiles gain +1 pierce through swarms',
-    apply: (p) => { p.affixes.pierceBonus += 1; },
-  },
-  {
-    id: 'blast_radius',
-    label: '★ Barrels, rockets & blasts gain +35% radius',
-    apply: (p) => { p.affixes.blastRadiusMult += 0.35; },
-  },
-  {
-    id: 'combo_surge',
-    label: '★ Kills grant +1 extra Boxhead Combo stack',
-    apply: (p) => { p.affixes.comboGainBonus += 1; },
-  },
-  {
-    id: 'execute',
-    label: '★ Instantly execute non-boss zombies below 16% HP',
-    apply: (p) => { p.affixes.executeThreshold = Math.min(0.32, p.affixes.executeThreshold + 0.16); },
-  },
+  { id: 'bleed_bonus', label: '★ +70% DMG vs Bleeding', apply: (p) => { p.affixes.bonusVsBleeding += 0.70; } },
+  { id: 'burn_bonus', label: '★ +65% DMG vs Burning', apply: (p) => { p.affixes.bonusVsBurning += 0.65; } },
+  { id: 'burn_death', label: '★ Victims burn on death', apply: (p) => { p.affixes.burnOnDeath += 1; } },
+  { id: 'crit_zap', label: '★ Crits chain lightning', apply: (p) => { p.affixes.critLightning += 1; } },
+  { id: 'vamp_kill', label: '★ +4 HP on every kill', apply: (p) => { p.affixes.vampOnKill += 4; } },
+  { id: 'pierce_plus', label: '★ +1 Projectile Pierce', apply: (p) => { p.affixes.pierceBonus += 1; } },
+  { id: 'blast_radius', label: '★ +35% Blast Radius', apply: (p) => { p.affixes.blastRadiusMult += 0.35; } },
+  { id: 'combo_surge', label: '★ 2x Faster Combo', apply: (p) => { p.affixes.comboGainBonus += 1; } },
+  { id: 'execute', label: '★ Execute foes <16% HP', apply: (p) => { p.affixes.executeThreshold = Math.min(0.32, p.affixes.executeThreshold + 0.16); } },
 ];
 
-/** Dedicated Dead Cells-style Mutation Cards (Brutality / Tactics / Survival) */
-function createMutationPool(player: any): UpgradeCard[] {
-  const curDps = Math.round(player.damage * player.stats.attackSpeed * 4.5);
+/** Dedicated Dead Cells-style Mutation Cards with huge scannable stats */
+function createMutationPool(): UpgradeCard[] {
   return [
     {
       id: 'mut_hemorrhage',
-      title: 'HEMORRHAGE OVERCLOCK',
+      title: 'HEMORRHAGE',
       category: 'BRUTALITY',
       rarity: 'rare',
       icon: '🩸',
-      stats: ['+30% WEAPON DPS', '+10% CRIT CHANCE', `EST. BASE DPS ${Math.round(curDps * 1.3)}`],
-      affixes: [
-        '★ +70% bonus damage to bleeding targets',
-        '★ Attacks gain +20% Spore Bleed proc',
+      stats: [
+        { value: '+30%', label: 'DAMAGE' },
+        { value: '+10%', label: 'CRIT' },
       ],
-      flavor: 'Serrated bio-alloy ammunition engineered for crimson chains.',
+      perk: '★ +70% DMG vs Bleeding + Bleed',
       apply: (p) => {
         p.stats.damageMult += 0.30;
         p.stats.critRate += 0.10;
@@ -84,16 +47,15 @@ function createMutationPool(player: any): UpgradeCard[] {
     },
     {
       id: 'mut_pyro_corpse',
-      title: 'THERMITE NECROSIS',
+      title: 'THERMITE BLAST',
       category: 'BRUTALITY',
       rarity: 'rare',
       icon: '🔥',
-      stats: ['+25% WEAPON DPS', '+35% BLAST RADIUS'],
-      affixes: [
-        '★ Victims explode into flames when they die',
-        '★ +65% bonus damage to burning targets',
+      stats: [
+        { value: '+25%', label: 'DAMAGE' },
+        { value: '+35%', label: 'BLAST AOE' },
       ],
-      flavor: 'Turn every fallen swarm cluster into a chain-detonating inferno.',
+      perk: '★ Victims burn on death (+65% vs Burn)',
       apply: (p) => {
         p.stats.damageMult += 0.25;
         p.affixes.blastRadiusMult += 0.35;
@@ -103,19 +65,18 @@ function createMutationPool(player: any): UpgradeCard[] {
     },
     {
       id: 'mut_rail_piercer',
-      title: 'HYPER-RAIL CAPACITOR',
+      title: 'HYPER-RAIL',
       category: 'TACTICS',
       rarity: 'uncommon',
       icon: '⚡',
-      stats: ['+22% FIRE RATE', '+12% CRIT CHANCE', '+40% ALL AMMO'],
-      affixes: [
-        '★ All projectiles gain +1 pierce through swarms',
-        '★ Critical hits fire chain-lightning arcs',
+      stats: [
+        { value: '+22%', label: 'FIRE RATE' },
+        { value: '+1', label: 'PIERCE' },
       ],
-      flavor: 'Overvolted rails punch straight through entire zombie corridors.',
+      perk: '★ Crits fire chain lightning',
       apply: (p) => {
         p.stats.attackSpeed *= 1.22;
-        p.stats.critRate += 0.12;
+        p.stats.critRate += 0.10;
         p.affixes.pierceBonus += 1;
         p.affixes.critLightning += 1;
         p.addAmmoToAll(0.4);
@@ -123,15 +84,15 @@ function createMutationPool(player: any): UpgradeCard[] {
     },
     {
       id: 'mut_vamp_adrenaline',
-      title: 'CARAPACE VAMPIRISM',
+      title: 'VAMPIRIC SHELL',
       category: 'SURVIVAL',
       rarity: 'uncommon',
       icon: '💚',
-      stats: ['+45 MAX HP', '+10 ARMOR', 'HEAL +50% HP'],
-      affixes: [
-        '★ Kills restore +4 HP & shave 0.25s off Dash CD',
+      stats: [
+        { value: '+45', label: 'MAX HP' },
+        { value: '+10', label: 'ARMOR' },
       ],
-      flavor: 'Siphon bio-spore vitality from every corpse to stay immortal.',
+      perk: '★ +4 HP & faster Dash per kill',
       apply: (p) => {
         p.maxHp += 45;
         p.armor += 10;
@@ -141,16 +102,15 @@ function createMutationPool(player: any): UpgradeCard[] {
     },
     {
       id: 'mut_combo_frenzy',
-      title: 'BOXHEAD KILL-FRENZY',
+      title: 'KILL FRENZY',
       category: 'BRUTALITY',
       rarity: 'uncommon',
       icon: '💀',
-      stats: ['+20% WEAPON DPS', '+15% MOVE SPEED', '+4 BARRELS'],
-      affixes: [
-        '★ Kills grant +1 extra Boxhead Combo stack',
-        '★ Combo timer extended +1.2s',
+      stats: [
+        { value: '+20%', label: 'DAMAGE' },
+        { value: '+15%', label: 'SPEED' },
       ],
-      flavor: 'Keep the classic x10 multiplier roaring through the bunker.',
+      perk: '★ 2x Combo speed + 4 Barrels',
       apply: (p) => {
         p.stats.damageMult += 0.20;
         p.def.speed *= 1.15;
@@ -161,16 +121,15 @@ function createMutationPool(player: any): UpgradeCard[] {
     },
     {
       id: 'mut_executioner',
-      title: 'VOID GUILLOTINE PROTOCOL',
+      title: 'VOID GUILLOTINE',
       category: 'TACTICS',
       rarity: 'legendary',
       icon: '⚔️',
-      stats: ['+35% WEAPON DPS', '+15% CRIT CHANCE', '+15% FIRE RATE'],
-      affixes: [
-        '★ Instantly execute non-boss zombies below 16% HP',
-        '★ Critical hits fire chain-lightning arcs',
+      stats: [
+        { value: '+35%', label: 'DAMAGE' },
+        { value: '+15%', label: 'CRIT' },
       ],
-      flavor: 'Zero mercy. Wounded targets dissolve instantly into neon ash.',
+      perk: '★ Execute foes <16% HP + Crit Zap',
       apply: (p) => {
         p.stats.damageMult += 0.35;
         p.stats.critRate += 0.15;
@@ -181,15 +140,15 @@ function createMutationPool(player: any): UpgradeCard[] {
     },
     {
       id: 'mut_demolition',
-      title: 'ORDNANCE STOCKPILE',
+      title: 'ORDNANCE DROP',
       category: 'SURVIVAL',
       rarity: 'common',
       icon: '🛢️',
-      stats: ['+60% ALL AMMO', '+5 BARRELS', '+4 ROCKETS', '+25 MAX HP'],
-      affixes: [
-        '★ Barrels, rockets & blasts gain +35% radius',
+      stats: [
+        { value: '+60%', label: 'ALL AMMO' },
+        { value: '+35%', label: 'BLAST AOE' },
       ],
-      flavor: 'Refill every launcher and rig the entire sector to blow.',
+      perk: '★ +5 Barrels · +4 Rockets · +25 HP',
       apply: (p) => {
         p.maxHp += 25;
         p.heal(25);
@@ -201,15 +160,15 @@ function createMutationPool(player: any): UpgradeCard[] {
     },
     {
       id: 'mut_glass_cannon',
-      title: 'OVERCLOCKED OPTICS',
+      title: 'OPTICS OVERCLOCK',
       category: 'TACTICS',
       rarity: 'common',
       icon: '🎯',
-      stats: ['+24% WEAPON DPS', '+14% CRIT CHANCE'],
-      affixes: [
-        '★ All projectiles gain +1 pierce through swarms',
+      stats: [
+        { value: '+24%', label: 'DAMAGE' },
+        { value: '+14%', label: 'CRIT' },
       ],
-      flavor: 'Precision tactical targeting firmware tuned for maximum DPS.',
+      perk: '★ +1 Projectile Pierce',
       apply: (p) => {
         p.stats.damageMult += 0.24;
         p.stats.critRate += 0.14;
@@ -218,15 +177,15 @@ function createMutationPool(player: any): UpgradeCard[] {
     },
     {
       id: 'mut_juggernaut',
-      title: 'TITANIUM BUNKER FRAME',
+      title: 'BUNKER FRAME',
       category: 'SURVIVAL',
       rarity: 'common',
       icon: '🛡️',
-      stats: ['+55 MAX HP', '+15 ARMOR', '+5 BARRICADES'],
-      affixes: [
-        '★ Full HP restoration on selection',
+      stats: [
+        { value: '+55', label: 'MAX HP' },
+        { value: '+15', label: 'ARMOR' },
       ],
-      flavor: 'Fortify your armor plating and lock down choke points.',
+      perk: '★ Full Heal + 5 Barricades',
       apply: (p) => {
         p.maxHp += 55;
         p.armor += 15;
@@ -237,7 +196,49 @@ function createMutationPool(player: any): UpgradeCard[] {
   ];
 }
 
-/** Wraps each Risk of Rain 2 RelicItem into a rich Dead Cells-style draft card (with optional bonus affix!) */
+const RELIC_HERO_STATS: Record<string, { stats: UpgradeStat[]; perk: string }> = {
+  super_shroom: {
+    stats: [{ value: '+25', label: 'MAX HP' }, { value: '+4/s', label: 'REGEN' }],
+    perk: '★ Heals fast while standing still',
+  },
+  fire_flower: {
+    stats: [{ value: '140%', label: 'BURN DMG' }, { value: '3s', label: 'IGNITE' }],
+    perk: '★ All hits ignite enemies',
+  },
+  starman_core: {
+    stats: [{ value: '8%', label: 'ON KILL' }, { value: '5s', label: 'INVINCIBLE' }],
+    perk: '★ Contact vaporizes swarms',
+  },
+  hopoo_feather: {
+    stats: [{ value: '-25%', label: 'DASH CD' }, { value: '+15%', label: 'SPEED' }],
+    perk: '★ Rapid dodge mobility',
+  },
+  soldiers_syringe: {
+    stats: [{ value: '+15%', label: 'FIRE RATE' }, { value: '+8%', label: 'SPEED' }],
+    perk: '★ Stacks infinitely',
+  },
+  ukulele_tesla: {
+    stats: [{ value: '25%', label: 'ZAP PROC' }, { value: '4', label: 'TARGETS' }],
+    perk: '★ Arcs chain lightning on hit',
+  },
+  tough_times_shell: {
+    stats: [{ value: '+15%', label: 'BLOCK' }, { value: '0', label: 'DMG TAKEN' }],
+    perk: '★ Deflects incoming hits',
+  },
+  tri_tip_dagger: {
+    stats: [{ value: '+15%', label: 'BLEED' }, { value: '240%', label: 'DOT DMG' }],
+    perk: '★ Stacks bleed damage',
+  },
+  lens_makers_glasses: {
+    stats: [{ value: '+10%', label: 'CRIT' }, { value: '2.0x', label: 'CRIT DMG' }],
+    perk: '★ Double damage on crits',
+  },
+  behemoth_core: {
+    stats: [{ value: '+60%', label: 'AOE DMG' }, { value: 'ALL', label: 'EXPLOSIVE' }],
+    perk: '★ Every shot explodes on hit',
+  },
+};
+
 function createRelicCards(player: any, boostRarity: boolean): UpgradeCard[] {
   return ALL_RELIC_ITEMS.map((item) => {
     const owned = player.getItemCount(item.id);
@@ -248,29 +249,16 @@ function createRelicCards(player: any, boostRarity: boolean): UpgradeCard[] {
         ? 'uncommon'
         : 'common';
 
-    const stats: string[] = [];
-    if (item.id === 'super_shroom') stats.push('+25 MAX HP', '+4.0 HP/S REGEN');
-    else if (item.id === 'fire_flower') stats.push('+140% BURN DMG', 'IGNITE ON HIT');
-    else if (item.id === 'starman_core') stats.push('8% STARMAN ON KILL', '+50% SPEED OVERDRIVE');
-    else if (item.id === 'hopoo_feather') stats.push('-25% DASH CD', '+15% MOVE SPEED');
-    else if (item.id === 'soldiers_syringe') stats.push('+15% FIRE RATE', '+8% MOVE SPEED');
-    else if (item.id === 'ukulele_tesla') stats.push('25% CHAIN LIGHTNING', 'UP TO 4 TARGETS');
-    else if (item.id === 'tough_times_shell') stats.push('+15% BLOCK CHANCE', 'FULL DMG DEFLECT');
-    else if (item.id === 'tri_tip_dagger') stats.push('+15% BLEED CHANCE', '240% BLEED DOT');
-    else if (item.id === 'lens_makers_glasses') stats.push('+10% CRIT CHANCE', '2.0x CRIT DAMAGE');
-    else if (item.id === 'behemoth_core') stats.push('+60% AOE BLAST', 'EXPLOSIVE ROUNDS');
+    const meta = RELIC_HERO_STATS[item.id] || {
+      stats: [{ value: '+1', label: 'RELIC' }],
+      perk: `★ ${item.stackText}`,
+    };
 
-    if (owned > 0) {
-      stats.push(`STACK x${owned} → x${owned + 1}`);
-    }
-
-    const affixes: string[] = [`★ ${item.stackText}`];
-
-    // Roll a bonus Dead Cells synergy affix on rare/legendary/boosted relic cards!
     let bonusAffix: AffixDef | null = null;
+    let perk = meta.perk;
     if (rarity === 'rare' || rarity === 'legendary' || boostRarity) {
       bonusAffix = BONUS_AFFIX_POOL[Math.floor(Math.random() * BONUS_AFFIX_POOL.length)];
-      affixes.push(bonusAffix.label);
+      perk = bonusAffix.label;
     }
 
     return {
@@ -279,9 +267,9 @@ function createRelicCards(player: any, boostRarity: boolean): UpgradeCard[] {
       category: 'RELIC',
       rarity,
       icon: item.icon,
-      stats,
-      affixes,
-      flavor: item.desc,
+      stats: meta.stats,
+      perk,
+      stackBadge: owned > 0 ? `x${owned} → x${owned + 1}` : undefined,
       relicId: item.id,
       apply: (p) => {
         p.addItem({ ...item, count: 1 });
@@ -291,10 +279,9 @@ function createRelicCards(player: any, boostRarity: boolean): UpgradeCard[] {
   });
 }
 
-/** Rolls 3 distinct Dead Cells-style cards with balanced archetypes & rarity weighting */
 export function rollUpgradeChoices(player: any, source: DraftSource): UpgradeCard[] {
   const boostRarity = source === 'boss_relic' || source === 'stage_clear';
-  const mutations = createMutationPool(player);
+  const mutations = createMutationPool();
   const relics = createRelicCards(player, boostRarity);
 
   const pickWeighted = (pool: UpgradeCard[], exclude: Set<string>): UpgradeCard => {
@@ -319,7 +306,6 @@ export function rollUpgradeChoices(player: any, source: DraftSource): UpgradeCar
   const used = new Set<string>();
 
   if (source === 'relic' || source === 'boss_relic') {
-    // 2 Relic cards + 1 Dead Cells Mutation card
     for (let i = 0; i < 2; i++) {
       const c = pickWeighted(relics, used);
       used.add(c.id);
@@ -329,7 +315,6 @@ export function rollUpgradeChoices(player: any, source: DraftSource): UpgradeCar
     used.add(m.id);
     chosen.push(m);
   } else {
-    // Level-Up / Stage Clear: 2 Dead Cells Mutations + 1 RoR2 Relic card
     for (let i = 0; i < 2; i++) {
       const m = pickWeighted(mutations, used);
       used.add(m.id);
@@ -346,24 +331,12 @@ export function rollUpgradeChoices(player: any, source: DraftSource): UpgradeCar
 export function getDraftHeader(source: DraftSource, level: number, stage: number): { title: string; subtitle: string } {
   switch (source) {
     case 'levelup':
-      return {
-        title: `LEVEL ${level} MUTATION DRAFT`,
-        subtitle: 'CHOOSE 1 COMBAT UPGRADE — PRESS [1] [2] [3] OR CLICK A CARD',
-      };
+      return { title: `LEVEL ${level} UPGRADE`, subtitle: 'PRESS [1] [2] [3] OR CLICK' };
     case 'boss_relic':
-      return {
-        title: 'APEX TITAN RELIC VAULT',
-        subtitle: 'HIGH-TIER SYNERGY DROP — PRESS [1] [2] [3] OR CLICK A CARD',
-      };
+      return { title: 'BOSS RELIC VAULT', subtitle: 'PRESS [1] [2] [3] OR CLICK' };
     case 'stage_clear':
-      return {
-        title: `SECTOR ${String(stage).padStart(2, '0')} CLEARED // BOUNTY`,
-        subtitle: 'SELECT YOUR NEXT-STAGE MUTATION BEFORE WARPING',
-      };
+      return { title: `STAGE ${String(stage).padStart(2, '0')} CLEAR`, subtitle: 'PICK BOUNTY BEFORE WARP' };
     default:
-      return {
-        title: 'RELIC CACHE DISCOVERED',
-        subtitle: 'SELECT 1 SYNERGY RELIC — PRESS [1] [2] [3] OR CLICK A CARD',
-      };
+      return { title: 'RELIC CACHE', subtitle: 'PRESS [1] [2] [3] OR CLICK' };
   }
 }

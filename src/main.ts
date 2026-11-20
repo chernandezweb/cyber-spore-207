@@ -41,26 +41,28 @@ function renderUpgradeDraftModal(cards: UpgradeCard[], title: string, subtitle: 
   row.innerHTML = cards
     .map((card, idx) => {
       const statsHtml = card.stats
-        .map((st) => `<div class="draft-stat-pill">${st}</div>`)
-        .join('');
-      const affixesHtml = card.affixes
-        .map((af) => `<div class="draft-affix-line">${af}</div>`)
+        .map(
+          (st) => `
+          <div class="draft-hero-stat">
+            <span class="draft-hero-val">${st.value}</span>
+            <span class="draft-hero-lbl">${st.label}</span>
+          </div>`
+        )
         .join('');
 
       return `
         <button class="draft-card rarity-${card.rarity} cat-${card.category.toLowerCase()}" data-card-index="${idx}" type="button">
           <div class="draft-card-top">
-            <span class="draft-key-badge">[${idx + 1}]</span>
-            <span class="draft-rarity-tag">${card.rarity.toUpperCase()} // ${card.category}</span>
+            <span class="draft-key-badge">${idx + 1}</span>
+            <span class="draft-rarity-tag">${card.rarity.toUpperCase()}</span>
+            ${card.stackBadge ? `<span class="draft-stack-badge">${card.stackBadge}</span>` : ''}
           </div>
-          <div class="draft-card-icon-wrap">
+          <div class="draft-card-hero-head">
             <span class="draft-card-icon">${card.icon}</span>
+            <h3 class="draft-card-title">${card.title}</h3>
           </div>
-          <h3 class="draft-card-title">${card.title}</h3>
-          <div class="draft-stats-list">${statsHtml}</div>
-          <div class="draft-affixes-box">${affixesHtml}</div>
-          <p class="draft-flavor">${card.flavor}</p>
-          <div class="draft-select-cta">SELECT [${idx + 1}]</div>
+          <div class="draft-hero-stats-grid">${statsHtml}</div>
+          <div class="draft-perk-banner">${card.perk}</div>
         </button>
       `;
     })

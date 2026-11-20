@@ -67,16 +67,21 @@ export interface PlayerAffixes {
 export type UpgradeRarity = 'common' | 'uncommon' | 'rare' | 'legendary';
 export type UpgradeCategory = 'BRUTALITY' | 'TACTICS' | 'SURVIVAL' | 'RELIC';
 
+export interface UpgradeStat {
+  value: string;          // Big bold number, e.g. "+30%", "+1", "+45"
+  label: string;          // Short uppercase label, e.g. "DAMAGE", "CRIT", "MAX HP"
+}
+
 export interface UpgradeCard {
   id: string;
   title: string;
   category: UpgradeCategory;
   rarity: UpgradeRarity;
   icon: string;
-  stats: string[];        // Concrete numbers e.g. ["+30% WEAPON DPS", "+10% CRIT"]
-  affixes: string[];      // Dead Cells-style golden star affixes
-  flavor: string;
-  relicId?: string;       // If card also grants/stacks a RelicItem
+  stats: UpgradeStat[];   // 2 big bold scannable stats
+  perk: string;           // 1 concise golden star synergy (<= 6 words)
+  stackBadge?: string;    // Optional e.g. "x1 → x2"
+  relicId?: string;
   apply: (player: any, engine: any) => void;
 }
 
