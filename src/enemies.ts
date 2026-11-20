@@ -49,22 +49,55 @@ export class Enemy {
   attackTimer = 1.0 + Math.random();
   breathShots = 0;
 
-  constructor(type: EnemyType, x: number, y: number, coeff: number) {
+  // Wall-avoidance steering state (prevents mobs getting stuck on bunkers/pillars)
+  avoidTimer = 0;
+  avoidVx = 0;
+  avoidVy = 0;
+  private lastBlockWall: any = null;
+
+  constructor(type: EnemyType, x: number, y: number, coeff: number, stage = 1) {
     const b = BASE[type];
     this.type = type;
     this.x = x;
     this.y = y;
     this.radius = b.radius;
-    const hpScale = 1 + 0.35 * (coeff - 1);
-    const dmgScale = 1 + 0.22 * (coeff - 1);
+    // Exponential late-game scaling so Stage 3+ stays intense & challenging
+    const c = Math.max(1, coeff);
+    const hpScale = Math.pow(c, 1.48) * (1 + (stage - 1) * 0.35);
+    const dmgScale = 1 + 0.32 * (c - 1) + (stage - 1) * 0.25;
+    const speedScale = 1 + Math.min(0.60, (c - 1) * 0.065 + (stage - 1) * 0.05);
     this.maxHp = Math.round(b.hp * hpScale);
     this.hp = this.maxHp;
     this.damage = Math.round(b.damage * dmgScale);
-    this.speed = b.speed * (0.9 + Math.random() * 0.25);
-    this.xpValue = Math.round(b.xp * (1 + 0.15 * (coeff - 1)));
-    this.coinValue = Math.round(b.coins * (1 + 0.25 * (coeff - 1)));
+    this.speed = b.speed * speedScale * (0.92 + Math.random() * 0.2);
+    this.xpValue = Math.round(b.xp * (1 + 0.12 * (c - 1)));
+    this.coinValue = Math.round(b.coins * (1 + 0.25 * (c - 1)));
     this.flying = b.flying;
     this.isBoss = type === 'bowser_boss';
+  }
+
+  /** Called by engine.moveCircle when a ground mob is blocked by a wall face */
+  notifyWallBlock(wall: { x: number; y: number; w: number; h: number }, axis: 'x' | 'y') {
+    // Keep committed direction if we're already rounding this same wall
+    if (this.avoidTimer > 0.2 && this.lastBlockWall === wall) return;
+    this.lastBlockWall = wall;
+    this.avoidTimer = 0.65;
+
+    if (axis === 'x') {
+      // Blocked horizontally -> steer vertically toward the nearest open end of the wall
+      const distTop = Math.abs(this.y - wall.y);
+      const distBot = Math.abs(wall.y + wall.h - this.y);
+      const dirY = distTop < distBot ? -1 : 1;
+      this.avoidVx = 0;
+      this.avoidVy = dirY * this.speed;
+    } else {
+      // Blocked vertically -> steer horizontally toward the nearest open end of the wall
+      const distLeft = Math.abs(this.x - wall.x);
+      const distRight = Math.abs(wall.x + wall.w - this.x);
+      const dirX = distLeft < distRight ? -1 : 1;
+      this.avoidVx = dirX * this.speed;
+      this.avoidVy = 0;
+    }
   }
 
   applyBurn(total: number, dur: number) {
@@ -109,9 +142,19 @@ export class Enemy {
     const dist = Math.hypot(dx, dy);
     this.facingAngle = Math.atan2(dy, dx);
 
-    // Boxhead swarming pathfinding
+    // Boxhead swarming pathfinding + wall-corner rounding when blocked
     let targetVx = (dx / (dist || 1)) * this.speed;
     let targetVy = (dy / (dist || 1)) * this.speed;
+
+    if (this.avoidTimer > 0) {
+      this.avoidTimer -= dt;
+      // Strongly follow the wall tangent around the corner, with slight pull toward player
+      targetVx = this.avoidVx * 0.9 + targetVx * 0.22;
+      targetVy = this.avoidVy * 0.9 + targetVy * 0.22;
+      const spd = Math.hypot(targetVx, targetVy) || 1;
+      targetVx = (targetVx / spd) * this.speed;
+      targetVy = (targetVy / spd) * this.speed;
+    }
 
     // High-performance crowd separation (capped at 8 nearby checks to guarantee 144+ FPS)
     const enemies = engine.enemies;

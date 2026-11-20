@@ -94,13 +94,20 @@ export function updateHUD(e: any) {
     set('hud-tp-label', tp.state === 'portal_open' ? 'PORTAL OPEN' : `CHARGING CONDUIT: ${Math.floor(tp.chargeProgress)}%`);
   }
 
-  // Boss HP
-  const boss = e.boss;
-  if (boss && !boss.isDead) {
-    const pct = (boss.hp / boss.maxHp) * 100;
+  // Boss HP (supports single, Twin, and Triple Titan encounters!)
+  const livingBosses = (e.bosses || []).filter((b: any) => !b.isDead);
+  if (livingBosses.length > 0) {
+    let curHp = 0;
+    let maxHp = 0;
+    for (const b of livingBosses) {
+      curHp += Math.max(0, b.hp);
+      maxHp += b.maxHp;
+    }
+    const pct = maxHp > 0 ? (curHp / maxHp) * 100 : 0;
     width('boss-hp-fill', pct);
     width('boss-hp-lag', pct);
-    set('boss-hp-numbers', `${Math.ceil(boss.hp)} / ${boss.maxHp}`);
+    set('boss-name', livingBosses.length > 1 ? `${livingBosses.length}x BOWSER-LEVIATHAN 207` : 'BOWSER-LEVIATHAN 207');
+    set('boss-hp-numbers', `${Math.ceil(curHp)} / ${maxHp}`);
   }
 
   // Relic + Active Dead Cells Affix Ribbon

@@ -63,11 +63,11 @@ export const ALL_RELIC_ITEMS: Omit<RelicItem, 'count'>[] = [
     name: 'Tanooki Dash-Feather',
     rarity: 'uncommon',
     icon: '🪶',
-    desc: 'Reduces Dash cooldown by 25% and grants +15% move speed.',
-    stackText: '+20% dash cooldown recovery per stack',
+    desc: 'Reduces Dash cooldown by 20% and grants +8% move speed.',
+    stackText: '+15% dash cooldown recovery & +6% speed per stack (capped)',
     onApply: (player) => {
-      player.def.dashCooldown *= 0.75;
-      player.def.speed *= 1.15;
+      player.def.dashCooldown = Math.max(0.75, player.def.dashCooldown * 0.82);
+      player.def.speed = Math.min(460, player.def.speed + 22);
     }
   },
   {
@@ -75,11 +75,11 @@ export const ALL_RELIC_ITEMS: Omit<RelicItem, 'count'>[] = [
     name: 'Cyber-Syringe',
     rarity: 'common',
     icon: '💉',
-    desc: '+15% Attack Speed and +10% Movement Speed.',
-    stackText: '+15% attack speed per stack',
+    desc: '+15% Attack Speed and +5% Movement Speed.',
+    stackText: '+15% attack speed per stack (capped at 2.8x)',
     onApply: (player) => {
-      player.stats.attackSpeed *= 1.15;
-      player.def.speed *= 1.08;
+      player.stats.attackSpeed = Math.min(2.8, player.stats.attackSpeed * 1.15);
+      player.def.speed = Math.min(460, player.def.speed + 14);
     }
   },
   {

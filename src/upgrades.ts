@@ -12,15 +12,15 @@ interface AffixDef {
 }
 
 const BONUS_AFFIX_POOL: AffixDef[] = [
-  { id: 'bleed_bonus', label: '★ +70% DMG vs Bleeding', apply: (p) => { p.affixes.bonusVsBleeding += 0.70; } },
-  { id: 'burn_bonus', label: '★ +65% DMG vs Burning', apply: (p) => { p.affixes.bonusVsBurning += 0.65; } },
+  { id: 'bleed_bonus', label: '★ +50% DMG vs Bleeding', apply: (p) => { p.affixes.bonusVsBleeding = Math.min(2.0, p.affixes.bonusVsBleeding + 0.50); } },
+  { id: 'burn_bonus', label: '★ +50% DMG vs Burning', apply: (p) => { p.affixes.bonusVsBurning = Math.min(2.0, p.affixes.bonusVsBurning + 0.50); } },
   { id: 'burn_death', label: '★ Victims burn on death', apply: (p) => { p.affixes.burnOnDeath += 1; } },
   { id: 'crit_zap', label: '★ Crits chain lightning', apply: (p) => { p.affixes.critLightning += 1; } },
   { id: 'vamp_kill', label: '★ +4 HP on every kill', apply: (p) => { p.affixes.vampOnKill += 4; } },
   { id: 'pierce_plus', label: '★ +1 Projectile Pierce', apply: (p) => { p.affixes.pierceBonus += 1; } },
-  { id: 'blast_radius', label: '★ +35% Blast Radius', apply: (p) => { p.affixes.blastRadiusMult += 0.35; } },
+  { id: 'blast_radius', label: '★ +30% Blast Radius', apply: (p) => { p.affixes.blastRadiusMult = Math.min(2.2, p.affixes.blastRadiusMult + 0.30); } },
   { id: 'combo_surge', label: '★ 2x Faster Combo', apply: (p) => { p.affixes.comboGainBonus += 1; } },
-  { id: 'execute', label: '★ Execute foes <16% HP', apply: (p) => { p.affixes.executeThreshold = Math.min(0.32, p.affixes.executeThreshold + 0.16); } },
+  { id: 'execute', label: '★ Execute foes <15% HP', apply: (p) => { p.affixes.executeThreshold = Math.min(0.25, p.affixes.executeThreshold + 0.12); } },
 ];
 
 /** Dedicated Dead Cells-style Mutation Cards with huge scannable stats */
@@ -38,9 +38,9 @@ function createMutationPool(): UpgradeCard[] {
       ],
       perk: '★ +70% DMG vs Bleeding + Bleed',
       apply: (p) => {
-        p.stats.damageMult += 0.30;
+        p.stats.damageMult += 0.25;
         p.stats.critRate += 0.10;
-        p.affixes.bonusVsBleeding += 0.70;
+        p.affixes.bonusVsBleeding = Math.min(2.0, p.affixes.bonusVsBleeding + 0.50);
         const dagger = ALL_RELIC_ITEMS.find(i => i.id === 'tri_tip_dagger');
         if (dagger) p.addItem({ ...dagger, count: 1 });
       },
@@ -57,10 +57,10 @@ function createMutationPool(): UpgradeCard[] {
       ],
       perk: '★ Victims burn on death (+65% vs Burn)',
       apply: (p) => {
-        p.stats.damageMult += 0.25;
-        p.affixes.blastRadiusMult += 0.35;
+        p.stats.damageMult += 0.22;
+        p.affixes.blastRadiusMult = Math.min(2.2, p.affixes.blastRadiusMult + 0.30);
         p.affixes.burnOnDeath += 1;
-        p.affixes.bonusVsBurning += 0.65;
+        p.affixes.bonusVsBurning = Math.min(2.0, p.affixes.bonusVsBurning + 0.50);
       },
     },
     {
@@ -108,12 +108,12 @@ function createMutationPool(): UpgradeCard[] {
       icon: '💀',
       stats: [
         { value: '+20%', label: 'DAMAGE' },
-        { value: '+15%', label: 'SPEED' },
+        { value: '+8%', label: 'SPEED' },
       ],
       perk: '★ 2x Combo speed + 4 Barrels',
       apply: (p) => {
         p.stats.damageMult += 0.20;
-        p.def.speed *= 1.15;
+        p.def.speed = Math.min(460, p.def.speed + 24);
         p.maxComboTimer += 1.2;
         p.affixes.comboGainBonus += 1;
         p.addAmmo('barrel', 4);

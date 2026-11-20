@@ -102,7 +102,11 @@ export class GameEngine {
   hudTimer = 0;
   globalTime = 0;
   placedObjectIdCounter = 1;
-  boss: Enemy | null = null;
+  bosses: Enemy[] = [];
+
+  get boss(): Enemy | null {
+    return this.bosses.find(b => !b.isDead) || null;
+  }
 
   // Dead Cells-style 3-card Upgrade Draft state
   upgradeQueue: DraftSource[] = [];
@@ -288,8 +292,8 @@ export class GameEngine {
     this.arcs = [];
     this.rings = [];
     this.vortices = [];
-    this.boss = null;
-    this.directorCredits = 30 + this.stage * 15;
+    this.bosses = [];
+    this.directorCredits = 30 + this.stage * 20;
     this.spawnTimer = 2.0;
 
     if (!this.player) {
@@ -792,12 +796,13 @@ export class GameEngine {
     }
   }
 
-  moveCircle(entity: { x: number; y: number }, r: number, dx: number, dy: number) {
+  moveCircle(entity: { x: number; y: number; notifyWallBlock?: (w: WallBlock, axis: 'x' | 'y') => void }, r: number, dx: number, dy: number) {
     entity.x += dx;
     for (const w of this.walls) {
       if (this.circleRectOverlap(entity.x, entity.y, r, w.x, w.y, w.w, w.h)) {
         if (dx > 0) entity.x = w.x - r;
         else if (dx < 0) entity.x = w.x + w.w + r;
+        entity.notifyWallBlock?.(w, 'x');
       }
     }
     for (const o of this.placedObjects) {
@@ -818,6 +823,7 @@ export class GameEngine {
       if (this.circleRectOverlap(entity.x, entity.y, r, w.x, w.y, w.w, w.h)) {
         if (dy > 0) entity.y = w.y - r;
         else if (dy < 0) entity.y = w.y + w.h + r;
+        entity.notifyWallBlock?.(w, 'y');
       }
     }
     for (const o of this.placedObjects) {
@@ -1156,13 +1162,18 @@ export class GameEngine {
 
     if (en.isBoss) {
       this.shake = 26;
-      if (this.teleporter) this.teleporter.bossDefeated = true;
-      document.getElementById('hud-boss-bar')?.classList.add('hidden');
+      this.bosses = this.bosses.filter(b => !b.isDead);
       this.spawnPickup('boss_relic', en.x - 24, en.y, 0, getRandomRelic('rare'));
       this.spawnPickup('ammo', en.x + 28, en.y, 60);
-      this.addDamageNumber(en.x, en.y - 40, 'APEX TITAN SLAIN!', '#ffbe0b', 2.0);
       soundEngine.playRelicPickup();
-      this.boss = null;
+
+      if (this.bosses.length === 0) {
+        if (this.teleporter) this.teleporter.bossDefeated = true;
+        document.getElementById('hud-boss-bar')?.classList.add('hidden');
+        this.addDamageNumber(en.x, en.y - 40, 'ALL TITANS SLAIN!', '#ffbe0b', 2.0);
+      } else {
+        this.addDamageNumber(en.x, en.y - 40, `TITAN DOWN! (${this.bosses.length} LEFT)`, '#ffbe0b', 1.7);
+      }
     }
   }
 
@@ -1277,19 +1288,24 @@ export class GameEngine {
     const charging = tp?.state === 'charging';
     if (tp?.state === 'portal_open') return;
 
-    this.directorCredits += dt * (1.8 + 0.8 * this.coeff) * (charging ? 2.5 : 1);
+    this.directorCredits += dt * (2.0 + 1.05 * this.coeff) * (charging ? 2.6 : 1);
     this.spawnTimer -= dt;
     if (this.spawnTimer > 0) return;
 
-    this.spawnTimer = charging ? 0.9 + Math.random() * 0.7 : 1.5 + Math.random() * 1.5;
+    this.spawnTimer = charging ? 0.75 + Math.random() * 0.6 : 1.3 + Math.random() * 1.2;
     const alive = this.enemies.filter(e => !e.isDead).length;
-    const max = Math.min(60, 20 + this.stage * 4 + Math.floor(this.coeff * 2));
+    const max = Math.min(75, 22 + this.stage * 6 + Math.floor(this.coeff * 2.5));
+
+    // Higher stages spawn more elite Koopas, Wisps, and Piranha Spitters
+    const goombaChance = Math.max(0.22, 0.56 - (this.stage - 1) * 0.08);
+    const koopaChance = goombaChance + 0.30;
+    const wispChance = koopaChance + 0.14;
 
     let spawned = 0;
-    while (this.directorCredits >= 8 && alive + spawned < max && spawned < 6) {
+    while (this.directorCredits >= 8 && alive + spawned < max && spawned < 8) {
       const sp = this.spawnPoints[Math.floor(Math.random() * this.spawnPoints.length)];
       const r = Math.random();
-      const type = r < 0.52 ? 'goomba' : r < 0.78 ? 'koopa' : r < 0.92 ? 'wisp' : 'piranha';
+      const type = r < goombaChance ? 'goomba' : r < koopaChance ? 'koopa' : r < wispChance ? 'wisp' : 'piranha';
       this.spawnEnemy(type, sp.x, sp.y);
       this.directorCredits -= 8;
       spawned++;
@@ -1297,7 +1313,7 @@ export class GameEngine {
   }
 
   spawnEnemy(type: Enemy['type'], x: number, y: number): Enemy {
-    const en = new Enemy(type, x, y, this.coeff);
+    const en = new Enemy(type, x, y, this.coeff, this.stage);
     this.enemies.push(en);
     if (this.rings.length < 36) {
       this.rings.push({ x, y, r: 5, maxR: en.radius * 2, life: 0.36, maxLife: 0.36, color: '#ff0077' });
@@ -1314,12 +1330,25 @@ export class GameEngine {
     if (tp.state === 'idle' && d < 120) {
       tp.state = 'charging';
       tp.bossSpawned = true;
-      const bx = tp.x + (p.x < tp.x ? 320 : -320);
-      const by = tp.y + (p.y < tp.y ? 320 : -320);
-      this.boss = this.spawnEnemy('bowser_boss', bx, by);
+
+      // Stage 1-2: 1 boss | Stage 3-5: 2 Twin Bosses | Stage 6+: 2-3 Bosses!
+      const bossCount = this.stage >= 6 && this.stage % 3 === 0 ? 3 : this.stage >= 3 ? 2 : 1;
+      const baseAngle = Math.atan2(tp.y - p.y, tp.x - p.x);
+      this.bosses = [];
+      for (let i = 0; i < bossCount; i++) {
+        const ang = baseAngle + (i * Math.PI * 2) / bossCount;
+        const bx = Math.max(120, Math.min(this.worldWidth - 120, tp.x + Math.cos(ang) * 340));
+        const by = Math.max(120, Math.min(this.worldHeight - 120, tp.y + Math.sin(ang) * 340));
+        this.bosses.push(this.spawnEnemy('bowser_boss', bx, by));
+      }
+
       soundEngine.playBossRoar();
-      this.shake = 22;
-      setText('hud-obj-text', 'DEFEND RING & SLAY BOSS!');
+      this.shake = 24;
+      const alertText = bossCount >= 3 ? 'TRIPLE TITAN ALERT!' : bossCount === 2 ? 'TWIN TITANS SPAWNED!' : 'DEFEND RING & SLAY BOSS!';
+      setText('hud-obj-text', alertText);
+      if (bossCount >= 2) {
+        this.addDamageNumber(tp.x, tp.y - 50, alertText, '#ff2a7a', 2.0);
+      }
       document.getElementById('hud-tp-bar-wrap')?.classList.remove('hidden');
       document.getElementById('hud-boss-bar')?.classList.remove('hidden');
     } else if (tp.state === 'portal_open' && d < 140) {

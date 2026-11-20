@@ -99,8 +99,10 @@ export class Player {
   }
 
   get moveSpeed(): number {
-    const base = this.def.speed * (1 + (this.comboMultiplier - 1) * 0.05);
-    return this.starTime > 0 ? base * 1.45 : base;
+    // Smooth capped speed so upgrades feel snappy without becoming uncontrollable
+    const comboBonus = 1 + Math.min(0.18, (this.comboMultiplier - 1) * 0.025);
+    const base = Math.min(480, this.def.speed * comboBonus);
+    return this.starTime > 0 ? Math.min(580, base * 1.25) : base;
   }
 
   selectWeapon(slotIndex: number) {
