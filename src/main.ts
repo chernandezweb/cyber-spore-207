@@ -2,6 +2,7 @@
 import { GameEngine } from './engine';
 import { ALL_RELIC_ITEMS } from './items';
 import { resetHUDCache } from './hud';
+import { clearRunSave, describeRunSave, loadRunSave, writeRunSave } from './save';
 import type { SurvivorId, UpgradeCard } from './types';
 
 let selectedSurvivor: SurvivorId = 'vanguard';
@@ -13,6 +14,7 @@ function initApp() {
 
   populateCodex();
   setupMenuBindings();
+  refreshContinueButton();
 
   // Wire Dead Cells-style 3-Card Upgrade Selection Modal
   engine.onUpgradeDraftOpen = (cards, title, subtitle) => {
@@ -108,6 +110,7 @@ function setupMenuBindings() {
     selectedSurvivor = (card.getAttribute('data-survivor') as SurvivorId) || 'vanguard';
   });
 
+  document.getElementById('btn-continue-run')?.addEventListener('click', () => continueGame());
   document.getElementById('btn-start-run')?.addEventListener('click', () => startGame(false));
   document.getElementById('btn-toggle-ai')?.addEventListener('click', () => engine?.toggleAI());
   document.getElementById('btn-toggle-audio')?.addEventListener('click', () => engine?.toggleAudio());
@@ -138,8 +141,48 @@ function setupMenuBindings() {
   });
 }
 
+function refreshContinueButton() {
+  const btnCont = document.getElementById('btn-continue-run');
+  const sumEl = document.getElementById('continue-run-summary');
+  const btnStart = document.getElementById('btn-start-run');
+  const saved = loadRunSave();
+
+  if (saved && btnCont && sumEl) {
+    sumEl.textContent = describeRunSave(saved);
+    btnCont.classList.remove('hidden');
+    if (btnStart) btnStart.textContent = '↻ START NEW RUN';
+  } else {
+    btnCont?.classList.add('hidden');
+    if (btnStart) btnStart.textContent = '▶ DEPLOY NOW';
+  }
+}
+
+function continueGame() {
+  if (!engine) return;
+  const saved = loadRunSave();
+  if (!saved) {
+    refreshContinueButton();
+    return;
+  }
+
+  document.getElementById('main-menu-overlay')?.classList.add('hidden');
+  document.getElementById('gameover-modal')?.classList.add('hidden');
+  document.getElementById('codex-modal')?.classList.add('hidden');
+  document.getElementById('upgrade-draft-modal')?.classList.add('hidden');
+
+  document.getElementById('hud-top-left')?.classList.remove('hidden');
+  document.getElementById('hud-top-right')?.classList.remove('hidden');
+  document.getElementById('hud-bottom')?.classList.remove('hidden');
+
+  resetHUDCache();
+  engine.continueSavedRun();
+}
+
 function startGame(withAi: boolean) {
   if (!engine) return;
+
+  // Starting a brand new run replaces any previous save
+  clearRunSave();
 
   // Always read the currently highlighted survivor card as source of truth
   const activeCard = document.querySelector('#survivor-cards-container .surv-card.selected');
@@ -163,8 +206,14 @@ function startGame(withAi: boolean) {
 function returnToMenu() {
   if (!engine) return;
 
+  if (engine.running && engine.player && !engine.player.isDead) {
+    writeRunSave(engine);
+  }
+
   engine.running = false;
   engine.pausedForUpgrade = false;
+
+  refreshContinueButton();
 
   document.getElementById('main-menu-overlay')?.classList.remove('hidden');
   document.getElementById('gameover-modal')?.classList.add('hidden');

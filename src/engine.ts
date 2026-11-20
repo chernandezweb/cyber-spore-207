@@ -25,6 +25,7 @@ import { updateHUD, showToast } from './hud';
 import { getPixelAtlas, WORLD_PER_PIXEL } from './pixelArt';
 import { DraftSource, getDraftHeader, rollUpgradeChoices } from './upgrades';
 import { FlowField } from './pathfinding';
+import { applyPlayerSave, clearRunSave, loadRunSave, writeRunSave } from './save';
 
 export interface Projectile {
   x: number;
@@ -121,6 +122,7 @@ export class GameEngine {
   private inExplosionDepth = 0;
   private explosionSfxCooldown = 0;
   private hitSfxCooldown = 0;
+  private saveTimer = 2.0;
   private fpsAccum = 0;
   private fpsFrames = 0;
 
@@ -151,6 +153,11 @@ export class GameEngine {
 
     this.resize();
     window.addEventListener('resize', () => this.resize());
+    window.addEventListener('beforeunload', () => {
+      if (this.running && this.player && !this.player.isDead) {
+        writeRunSave(this);
+      }
+    });
     this.bindInput();
     requestAnimationFrame(ts => this.loop(ts));
   }
@@ -272,6 +279,47 @@ export class GameEngine {
     if (this.ai.enabled !== aiEnabled) this.toggleAI();
     this.loadStage();
     this.running = true;
+    writeRunSave(this);
+  }
+
+  continueSavedRun(): boolean {
+    const saved = loadRunSave();
+    if (!saved) return false;
+
+    this.survivorId = saved.survivorId;
+    this.stage = Math.max(1, saved.stage);
+    this.time = Math.max(0, saved.time);
+    this.kills = Math.max(0, saved.kills);
+    this.coins = 0;
+    this.deathTimer = -1;
+    this.player = null;
+    this.upgradeQueue = [];
+    this.activeUpgradeCards = null;
+    this.activeDraftSource = null;
+    this.pausedForUpgrade = false;
+    this.pendingNextStage = !!saved.pendingNextStage;
+    this.onUpgradeDraftClose?.();
+
+    this.loadStage();
+    if (this.player) {
+      applyPlayerSave(this.player, saved.player);
+    }
+    this.running = true;
+    updateHUD(this);
+
+    // Restore any pending upgrade draft picks that were open when the player refreshed
+    if (saved.pendingDrafts && saved.pendingDrafts.length > 0) {
+      for (const src of saved.pendingDrafts) {
+        this.queueUpgradeDraft(src);
+      }
+    } else if (this.pendingNextStage) {
+      this.pendingNextStage = false;
+      this.stage++;
+      this.loadStage();
+    }
+
+    writeRunSave(this);
+    return true;
   }
 
   loadStage() {
@@ -371,6 +419,7 @@ export class GameEngine {
     if (this.upgradeQueue.length > 0) {
       const next = this.upgradeQueue.shift()!;
       this.openUpgradeDraft(next);
+      writeRunSave(this);
       return;
     }
 
@@ -381,6 +430,7 @@ export class GameEngine {
       soundEngine.playPipeWarp();
       this.loadStage();
     }
+    writeRunSave(this);
   }
 
   loop(ts: number) {
@@ -458,6 +508,15 @@ export class GameEngine {
     if (this.hudTimer <= 0) {
       this.hudTimer = 0.08;
       updateHUD(this);
+    }
+
+    // Periodic autosave while alive
+    if (!p.isDead && this.deathTimer <= 0) {
+      this.saveTimer -= dt;
+      if (this.saveTimer <= 0) {
+        this.saveTimer = 2.0;
+        writeRunSave(this);
+      }
     }
   }
 
@@ -1438,6 +1497,7 @@ export class GameEngine {
   }
 
   onPlayerDeath() {
+    clearRunSave();
     const p = this.player!;
     this.spawnBurst(p.x, p.y, p.def.accentColor, 65, 450);
     this.shake = 24;
@@ -1446,6 +1506,7 @@ export class GameEngine {
   }
 
   finishRun(victory: boolean) {
+    if (!victory) clearRunSave();
     this.running = false;
     this.pausedForUpgrade = false;
     this.onUpgradeDraftClose?.();
