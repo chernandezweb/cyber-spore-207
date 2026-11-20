@@ -1,0 +1,23 @@
+{
+  "name": "cyber-spore-207",
+  "private": true,
+  "version": "0.2.07",
+  "description": "CYBER-SPORE 207 — A 2.5D Cyber-Bioluminescent Action Roguelike (Risk of Rain 2 x Super Mario Bros)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5207",
+    "build": "tsc && vite build",
+    "preview": "vite preview --port 5207",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.0.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0",
+    "typescript": "^5.6.2",
+    "vite": "^5.4.8"
+  }
+}

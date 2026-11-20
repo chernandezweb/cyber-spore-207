@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CYBER-SPORE 207 // 2.5D Pixel-Art Arena</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- 2.5D Top-Down Arena Canvas -->
+      <canvas id="game-canvas"></canvas>
+
+      <!-- Top-Left HUD: Stage Info, Kills, Spores, Combo Multiplier -->
+      <div id="hud-top-left" class="hud-panel hidden">
+        <div class="stage-banner">
+          <span class="stage-tag" id="hud-stage-num">STAGE 01</span>
+          <span class="stage-name" id="hud-stage-name">SECTOR 207: THE BUNKER</span>
+        </div>
+        <div class="currency-row">
+          <div class="currency-pill gold" title="Zombies Vaporized">
+            <span class="c-icon">💀</span>
+            <span id="hud-coins">0</span>
+            <span class="c-label">KILLS</span>
+          </div>
+          <div class="currency-pill lunar" title="Lunar Spores (Meta-Currency)">
+            <span class="c-icon">✦</span>
+            <span id="hud-lunar">0</span>
+            <span class="c-label">SPORES</span>
+          </div>
+          <div class="currency-pill stomp" title="Boxhead Combo Multiplier">
+            <span class="c-icon">⚡</span>
+            <span id="hud-stomp-combo">x1 (0)</span>
+            <span class="c-label">COMBO</span>
+          </div>
+        </div>
+        <div class="objective-box" id="hud-objective">
+          <div class="obj-header">OBJECTIVE // BOXHEAD PROTOCOL</div>
+          <div class="obj-text" id="hud-obj-text">Survive the horde! Activate the Bio-Monolith [E] to charge!</div>
+          <div class="teleporter-progress-wrap hidden" id="hud-tp-bar-wrap">
+            <div class="teleporter-progress-fill" id="hud-tp-bar-fill"></div>
+            <span class="teleporter-progress-label" id="hud-tp-label">CHARGING CONDUIT: 0%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top-Center HUD: Colossal Boss Health Bar -->
+      <div id="hud-boss-bar" class="hidden">
+        <div class="boss-title-row">
+          <span class="boss-name" id="boss-name">BOWSER-LEVIATHAN 207</span>
+          <span class="boss-sub" id="boss-subtitle">APEX DEVIL TITAN OF THE NEON VOID</span>
+        </div>
+        <div class="boss-hp-track">
+          <div class="boss-hp-lag" id="boss-hp-lag"></div>
+          <div class="boss-hp-fill" id="boss-hp-fill"></div>
+          <span class="boss-hp-numbers" id="boss-hp-numbers">3200 / 3200</span>
+        </div>
+      </div>
+
+      <!-- Top-Right HUD: Risk of Rain 2 Escalating Difficulty Meter & Utility Toggles -->
+      <div id="hud-top-right" class="hud-panel hidden">
+        <div class="ror-diff-box">
+          <div class="diff-clock-row">
+            <span class="diff-timer" id="hud-timer">00:00</span>
+            <span class="diff-fps" id="hud-fps">60 FPS</span>
+            <span class="diff-stage-mult" id="hud-coeff">COEFF 1.00x</span>
+          </div>
+          <div class="diff-bar-outer">
+            <div class="diff-segments">
+              <span class="seg s-easy">EASY</span>
+              <span class="seg s-med">MEDIUM</span>
+              <span class="seg s-hard">HARD</span>
+              <span class="seg s-vhard">V.HARD</span>
+              <span class="seg s-insane">INSANE</span>
+              <span class="seg s-207">HAHAHA 207</span>
+            </div>
+            <div class="diff-marker" id="hud-diff-marker">▲</div>
+          </div>
+          <div class="diff-current-badge" id="hud-diff-label">EASY // CALM SPORES</div>
+        </div>
+        <div class="quick-actions-row">
+          <button id="btn-toggle-ai" class="hud-mini-btn" title="Toggle AI Auto-Pilot Tester [F4]">
+            🤖 AI PILOT: <span id="ai-status-text">OFF</span>
+          </button>
+          <button id="btn-toggle-audio" class="hud-mini-btn" title="Toggle Sound [M]">
+            🔊 AUDIO: <span id="audio-status-text">ON</span>
+          </button>
+          <button id="btn-return-menu" class="hud-mini-btn" title="Return to Main Menu [ESC]">
+            ⌂ MENU
+          </button>
+        </div>
+      </div>
+
+      <!-- Top Relic Item Inventory Ribbon (Risk of Rain 2 Stackable Items) -->
+      <div id="hud-item-ribbon" class="hidden">
+        <div class="ribbon-label">RELIC SYNERGIES</div>
+        <div id="hud-items-list" class="items-grid"></div>
+      </div>
+
+      <!-- Pickup Notification Banner -->
+      <div id="pickup-toast" class="hidden">
+        <div class="toast-icon" id="toast-icon">🍄</div>
+        <div class="toast-body">
+          <div class="toast-title" id="toast-title">NEON SUPER-SHROOM</div>
+          <div class="toast-desc" id="toast-desc">+25 Max HP &amp; +2.5 HP/s Bioluminescent Regen</div>
+        </div>
+      </div>
+
+      <!-- Bottom HUD: Health/Level Status & Boxhead Weapon Slots [1 - 7] -->
+      <div id="hud-bottom" class="hidden">
+        <div class="survivor-status-card">
+          <div class="survivor-lvl-badge">
+            <span class="lvl-label">LVL</span>
+            <span class="lvl-num" id="hud-level">1</span>
+          </div>
+          <div class="bars-column">
+            <div class="hp-bar-container">
+              <div class="hp-bar-shield" id="hud-shield-fill"></div>
+              <div class="hp-bar-fill" id="hud-hp-fill"></div>
+              <span class="hp-bar-text" id="hud-hp-text">150 / 150 HP</span>
+            </div>
+            <div class="xp-bar-container">
+              <div class="xp-bar-fill" id="hud-xp-fill"></div>
+              <span class="xp-bar-text" id="hud-stats-summary">ATK x1.00 | AS 100% | CRIT 8% | SPEED 280</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Boxhead 7-Weapon Hotbar -->
+        <div class="skills-cluster weapons-cluster">
+          <div class="skill-slot weapon-slot active" id="weapon-slot-0" title="[1] Dual Plasma Pistols">
+            <div class="skill-key">1</div>
+            <div class="skill-icon">🔫</div>
+            <div class="skill-name">PISTOLS</div>
+            <div class="weapon-ammo" id="weapon-ammo-0">∞</div>
+          </div>
+          <div class="skill-slot weapon-slot" id="weapon-slot-1" title="[2] Neon Shotgun">
+            <div class="skill-key">2</div>
+            <div class="skill-icon">💥</div>
+            <div class="skill-name">SHOTGUN</div>
+            <div class="weapon-ammo" id="weapon-ammo-1">30</div>
+          </div>
+          <div class="skill-slot weapon-slot" id="weapon-slot-2" title="[3] Cyber-SMG">
+            <div class="skill-key">3</div>
+            <div class="skill-icon">⚡</div>
+            <div class="skill-name">SMG</div>
+            <div class="weapon-ammo" id="weapon-ammo-2">120</div>
+          </div>
+          <div class="skill-slot weapon-slot" id="weapon-slot-3" title="[4] Spore Grenades">
+            <div class="skill-key">4</div>
+            <div class="skill-icon">💣</div>
+            <div class="skill-name">GRENADES</div>
+            <div class="weapon-ammo" id="weapon-ammo-3">10</div>
+          </div>
+          <div class="skill-slot weapon-slot" id="weapon-slot-4" title="[5] Plasma Rockets">
+            <div class="skill-key">5</div>
+            <div class="skill-icon">🚀</div>
+            <div class="skill-name">ROCKETS</div>
+            <div class="weapon-ammo" id="weapon-ammo-4">8</div>
+          </div>
+          <div class="skill-slot weapon-slot barrel-slot" id="weapon-slot-5" title="[6 or Space] Place Explosive Barrel">
+            <div class="skill-key">6 / Space</div>
+            <div class="skill-icon">🛢️</div>
+            <div class="skill-name">BARREL</div>
+            <div class="weapon-ammo" id="weapon-ammo-5">6</div>
+          </div>
+          <div class="skill-slot weapon-slot barricade-slot" id="weapon-slot-6" title="[7 or F] Place Cyber Barricade">
+            <div class="skill-key">7 / F</div>
+            <div class="skill-icon">🛡️</div>
+            <div class="skill-name">BARRICADE</div>
+            <div class="weapon-ammo" id="weapon-ammo-6">8</div>
+          </div>
+
+          <!-- Special Ultimate -->
+          <div class="skill-slot special-slot" id="special-slot" title="[R] Special Ultimate">
+            <div class="skill-key">R</div>
+            <div class="skill-icon">⭐</div>
+            <div class="skill-name">SPECIAL</div>
+            <div class="skill-cd-overlay hidden" id="skill-cd-3"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAIN MENU OVERLAY -->
+      <div id="main-menu-overlay" class="overlay-screen">
+        <div class="menu-bg-art"></div>
+        <div class="menu-backdrop-vignette"></div>
+
+        <div class="menu-container">
+          <header class="menu-header">
+            <div class="platform-badges">
+              <span class="p-badge cyan">2.5D BOXHEAD TOP-DOWN ARENA</span>
+              <span class="p-badge magenta">BOXHEAD ZOMBIE WARS × RISK OF RAIN 2</span>
+              <span class="p-badge lime" id="runtime-badge">WEB &amp; TAURI STEAM-READY BUILD v0.207</span>
+            </div>
+            <h1 class="game-logo">
+              <span class="logo-cyber">CYBER-SPORE</span>
+              <span class="logo-207">207</span>
+            </h1>
+            <p class="game-tagline">BOXHEAD ZOMBIE WARS // 2.5D TOP-DOWN ACTION ROGUELIKE</p>
+          </header>
+
+          <div class="menu-grid">
+            <!-- Left Column: Survivor Select -->
+            <section class="menu-card survivor-select-panel">
+              <h2 class="panel-title">01 // SELECT YOUR BOXHEAD SURVIVOR</h2>
+              <div class="survivor-cards" id="survivor-cards-container">
+                <div class="surv-card selected" data-survivor="vanguard">
+                  <div class="surv-portrait portrait-vanguard"></div>
+                  <div class="surv-info">
+                    <div class="surv-header">
+                      <h3>VANGUARD-207</h3>
+                      <span class="surv-role">SOLAR COMMANDO</span>
+                    </div>
+                    <p class="surv-desc">Heavy Boxhead Enforcer with reinforced armor, dual plasma pistols, explosive rockets, and Starman Overdrive invulnerability.</p>
+                    <div class="surv-stats">
+                      <span>HP: 150</span> • <span>ARMOR: 15</span> • <span>DASH CD: 2.5s</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="surv-card" data-survivor="phantom">
+                  <div class="surv-portrait portrait-phantom"></div>
+                  <div class="surv-info">
+                    <div class="surv-header">
+                      <h3>PHANTOM-X</h3>
+                      <span class="surv-role">BIO-RANGER SNIPER</span>
+                    </div>
+                    <p class="surv-desc">High-Tech Boxhead Scout with high critical chance, rapid Cyber-SMG, and Tesla Singularity Vortex pulling swarms.</p>
+                    <div class="surv-stats">
+                      <span>HP: 120</span> • <span>CRIT: 22%</span> • <span>SPEED: +10%</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="surv-card" data-survivor="huntress">
+                  <div class="surv-portrait portrait-huntress"></div>
+                  <div class="surv-info">
+                    <div class="surv-header">
+                      <h3>SPORE-HUNTRESS</h3>
+                      <span class="surv-role">NEON ASSASSIN</span>
+                    </div>
+                    <p class="surv-desc">Hyper-agile Boxhead Valkyrie with Neon Shotgun, rapid dash cooldown, and 12-blade orbiting Blade Storm.</p>
+                    <div class="surv-stats">
+                      <span>HP: 105</span> • <span>SPEED: +20%</span> • <span>DASH CD: 1.5s</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Right Column: Key Art Preview, Controls & Launch -->
+            <section class="menu-card launch-panel">
+              <div class="cover-preview-frame">
+                <img src="/assets/title-cover.jpg" alt="CYBER-SPORE 207 Key Art" class="cover-img" />
+                <div class="cover-caption">
+                  <span>✨ 2.5D Top-Down Boxhead Arena Universe</span>
+                  <button id="btn-open-codex" class="codex-btn">📖 VIEW BESTIARY &amp; RELIC CODEX</button>
+                </div>
+              </div>
+
+              <div class="controls-guide">
+                <h2 class="panel-title">02 // BOXHEAD CONTROLS &amp; WEAPONS</h2>
+                <div class="keys-grid">
+                  <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 8-Way Move</div>
+                  <div><kbd>MOUSE</kbd> 360° Aim &amp; Shoot</div>
+                  <div><kbd>1</kbd> - <kbd>7</kbd> / <kbd>SCROLL</kbd> Switch Weapons</div>
+                  <div><kbd>SPACE</kbd> Place Explosive Barrel!</div>
+                  <div><kbd>F</kbd> Place Cyber Barricade!</div>
+                  <div><kbd>SHIFT</kbd> / <kbd>RMB</kbd> Dash / Dodge</div>
+                  <div><kbd>R</kbd> Special Ultimate</div>
+                  <div><kbd>E</kbd> Activate Teleporter</div>
+                </div>
+              </div>
+
+              <div class="launch-buttons">
+                <button id="btn-start-run" class="btn-primary-launch">
+                  ▶ DEPLOY INTO SECTOR 207
+                </button>
+                <button id="btn-start-ai-demo" class="btn-secondary-launch">
+                  🤖 LAUNCH AI AUTO-PILOT SHOWCASE
+                </button>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+
+      <!-- BESTIARY & RELIC CODEX MODAL -->
+      <div id="codex-modal" class="overlay-screen hidden">
+        <div class="codex-window">
+          <div class="codex-header">
+            <h2>SECTOR 207 // BESTIARY &amp; RELIC CODEX</h2>
+            <button id="btn-close-codex" class="btn-close">✕ CLOSE</button>
+          </div>
+          <div class="codex-body">
+            <div class="codex-art-showcase">
+              <div class="codex-art-card">
+                <h3>PLAYABLE BOXHEAD SURVIVORS</h3>
+                <img src="/assets/hero-spritesheet.jpg" alt="Survivors" />
+              </div>
+              <div class="codex-art-card">
+                <h3>ALIEN ZOMBIE BESTIARY &amp; DEVIL BOSS</h3>
+                <img src="/assets/enemies-boss.jpg" alt="Bestiary" />
+              </div>
+            </div>
+            <h3>STACKING RELIC ITEMS (RISK OF RAIN 2 SYNERGIES)</h3>
+            <div id="codex-items-grid" class="codex-items-grid"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DEAD CELLS-STYLE 3-CARD UPGRADE SELECTION MODAL -->
+      <div id="upgrade-draft-modal" class="overlay-screen hidden">
+        <div class="draft-window">
+          <div class="draft-header">
+            <span class="draft-badge">MUTATION // SYNERGY DRAFT</span>
+            <h2 id="draft-title">LEVEL 2 MUTATION DRAFT</h2>
+            <p id="draft-subtitle">CHOOSE 1 COMBAT UPGRADE — PRESS [1] [2] [3] OR CLICK A CARD</p>
+          </div>
+          <div id="draft-cards-row" class="draft-cards-row"></div>
+        </div>
+      </div>
+
+      <!-- GAME OVER / VICTORY SUMMARY MODAL -->
+      <div id="gameover-modal" class="overlay-screen hidden">
+        <div class="gameover-window">
+          <h2 id="go-title">OVERWHELMED BY THE ZOMBIE SWARM</h2>
+          <p id="go-subtitle">Your defenses fell in Sector 207.</p>
+          <div class="go-stats-grid" id="go-stats-grid"></div>
+          <div class="go-actions">
+            <button id="btn-retry-run" class="btn-primary-launch">↻ DEPLOY NEW RUN</button>
+            <button id="btn-go-menu" class="btn-secondary-launch">⌂ MAIN MENU</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

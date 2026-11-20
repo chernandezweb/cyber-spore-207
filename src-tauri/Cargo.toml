@@ -1,0 +1,18 @@
+[package]
+name = "cyber-spore-207"
+version = "0.2.7"
+description = "CYBER-SPORE 207 — 2.5D Cyber-Bioluminescent Action Roguelike"
+authors = ["Studio 207"]
+edition = "2021"
+
+[lib]
+name = "cyber_spore_207_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.0.0", features = [] }
+
+[dependencies]
+tauri = { version = "2.0.0", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
