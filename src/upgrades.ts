@@ -1,9 +1,84 @@
 // CYBER-SPORE 207 // Dead Cells-Style 3-Card Upgrade & Affix Drafting System
 // Clean, scannable, big-number cards designed to be read in <0.5s mid-combat.
 import { ALL_RELIC_ITEMS } from './items';
-import type { UpgradeCard, UpgradeRarity, UpgradeStat } from './types';
+import type { UpgradeCard, UpgradeRarity, UpgradeStat, WeaponType } from './types';
 
 export type DraftSource = 'levelup' | 'relic' | 'boss_relic' | 'stage_clear';
+
+/** Progressive Weapon Unlock cards offered in the draft while weapons are locked */
+const WEAPON_UNLOCK_META: Record<Exclude<WeaponType, 'pistol' | 'barrel'>, {
+  title: string;
+  rarity: UpgradeRarity;
+  icon: string;
+  stats: UpgradeStat[];
+  perk: string;
+  minLevel: number;
+}> = {
+  shotgun: {
+    title: 'UNLOCK: SHOTGUN',
+    rarity: 'uncommon',
+    icon: '💥',
+    stats: [{ value: '6x13', label: 'PELLETS' }, { value: '30', label: 'SHELLS' }],
+    perk: '★ Pierces crowds at close range',
+    minLevel: 1,
+  },
+  smg: {
+    title: 'UNLOCK: CYBER-SMG',
+    rarity: 'uncommon',
+    icon: '⚡',
+    stats: [{ value: '10.5/s', label: 'FIRE RATE' }, { value: '120', label: 'ROUNDS' }],
+    perk: '★ Rapid-fire swarm shredder',
+    minLevel: 1,
+  },
+  grenade: {
+    title: 'UNLOCK: GRENADES',
+    rarity: 'rare',
+    icon: '💣',
+    stats: [{ value: '155', label: 'BLAST DMG' }, { value: '13', label: 'CHARGES' }],
+    perk: '★ Bounces off walls into swarms',
+    minLevel: 2,
+  },
+  barricade: {
+    title: 'UNLOCK: BARRICADE',
+    rarity: 'uncommon',
+    icon: '🛡️',
+    stats: [{ value: '150', label: 'WALL HP' }, { value: '10', label: 'UNITS' }],
+    perk: '★ Fortify chokes with [F]',
+    minLevel: 2,
+  },
+  rocket: {
+    title: 'UNLOCK: ROCKETS',
+    rarity: 'legendary',
+    icon: '🚀',
+    stats: [{ value: '230', label: 'AOE DMG' }, { value: '10', label: 'ROCKETS' }],
+    perk: '★ Heavy anti-boss shockwave',
+    minLevel: 3,
+  },
+};
+
+function createWeaponUnlockCards(player: any): UpgradeCard[] {
+  const cards: UpgradeCard[] = [];
+  const order: Exclude<WeaponType, 'pistol' | 'barrel'>[] = ['shotgun', 'smg', 'grenade', 'barricade', 'rocket'];
+  for (const wType of order) {
+    const w = player.weapons?.[wType];
+    if (!w || w.unlocked) continue;
+    const meta = WEAPON_UNLOCK_META[wType];
+    if (player.level < meta.minLevel && cards.length > 0) continue;
+    cards.push({
+      id: `unlock_${wType}`,
+      title: meta.title,
+      category: 'TACTICS',
+      rarity: meta.rarity,
+      icon: meta.icon,
+      stats: meta.stats,
+      perk: meta.perk,
+      apply: (p) => {
+        p.unlockWeapon(wType);
+      },
+    });
+  }
+  return cards;
+}
 
 interface AffixDef {
   id: string;
@@ -283,6 +358,7 @@ export function rollUpgradeChoices(player: any, source: DraftSource): UpgradeCar
   const boostRarity = source === 'boss_relic' || source === 'stage_clear';
   const mutations = createMutationPool();
   const relics = createRelicCards(player, boostRarity);
+  const weaponUnlocks = createWeaponUnlockCards(player);
 
   const pickWeighted = (pool: UpgradeCard[], exclude: Set<string>): UpgradeCard => {
     const avail = pool.filter(c => !exclude.has(c.id));
@@ -291,7 +367,7 @@ export function rollUpgradeChoices(player: any, source: DraftSource): UpgradeCar
       if (boostRarity) {
         return c.rarity === 'legendary' ? 4 : c.rarity === 'rare' ? 5 : c.rarity === 'uncommon' ? 3 : 1;
       }
-      return c.rarity === 'legendary' ? 1.2 : c.rarity === 'rare' ? 2.5 : c.rarity === 'uncommon' ? 4 : 4.5;
+      return c.rarity === 'legendary' ? 1.0 : c.rarity === 'rare' ? 2.2 : c.rarity === 'uncommon' ? 4 : 4.8;
     });
     const total = weights.reduce((a, b) => a + b, 0);
     let r = Math.random() * total;
@@ -305,24 +381,35 @@ export function rollUpgradeChoices(player: any, source: DraftSource): UpgradeCar
   const chosen: UpgradeCard[] = [];
   const used = new Set<string>();
 
+  // Offer 1 locked weapon unlock card whenever the player still has locked weapons!
+  if (weaponUnlocks.length > 0 && (source === 'levelup' || source === 'stage_clear' || Math.random() < 0.55)) {
+    const wCard = weaponUnlocks[Math.floor(Math.random() * Math.min(2, weaponUnlocks.length))];
+    used.add(wCard.id);
+    chosen.push(wCard);
+  }
+
   if (source === 'relic' || source === 'boss_relic') {
-    for (let i = 0; i < 2; i++) {
+    while (chosen.length < 2) {
       const c = pickWeighted(relics, used);
       used.add(c.id);
       chosen.push(c);
     }
-    const m = pickWeighted(mutations, used);
-    used.add(m.id);
-    chosen.push(m);
-  } else {
-    for (let i = 0; i < 2; i++) {
+    while (chosen.length < 3) {
       const m = pickWeighted(mutations, used);
       used.add(m.id);
       chosen.push(m);
     }
-    const r = pickWeighted(relics, used);
-    used.add(r.id);
-    chosen.push(r);
+  } else {
+    while (chosen.length < 2) {
+      const m = pickWeighted(mutations, used);
+      used.add(m.id);
+      chosen.push(m);
+    }
+    while (chosen.length < 3) {
+      const r = pickWeighted(relics, used);
+      used.add(r.id);
+      chosen.push(r);
+    }
   }
 
   return chosen;

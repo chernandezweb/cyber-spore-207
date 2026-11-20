@@ -53,15 +53,15 @@ export class AIPilot {
       // Always shoot
       engine.input.fire = true;
 
-      // Weapon switching logic (Boxhead style)
+      // Weapon switching logic (respects unlocked arsenal)
       if (this.weaponSwitchCooldown <= 0) {
-        if (clusterCount >= 5 && p.weapons.rocket.ammo > 0 && minDist > 180) {
+        if (clusterCount >= 5 && p.weapons.rocket.unlocked && p.weapons.rocket.ammo > 0 && minDist > 180) {
           p.selectWeapon(4); // Rockets
           this.weaponSwitchCooldown = 1.0;
-        } else if (clusterCount >= 3 && p.weapons.shotgun.ammo > 0 && minDist < 240) {
+        } else if (clusterCount >= 3 && p.weapons.shotgun.unlocked && p.weapons.shotgun.ammo > 0 && minDist < 240) {
           p.selectWeapon(1); // Shotgun
           this.weaponSwitchCooldown = 0.8;
-        } else if (p.weapons.smg.ammo > 0) {
+        } else if (p.weapons.smg.unlocked && p.weapons.smg.ammo > 0) {
           p.selectWeapon(2); // SMG
           this.weaponSwitchCooldown = 0.6;
         } else {

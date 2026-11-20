@@ -12,11 +12,11 @@ interface EnemyBase {
 }
 
 const BASE: Record<EnemyType, EnemyBase> = {
-  goomba: { radius: 18, hp: 42, damage: 12, speed: 110, xp: 12, coins: 4, flying: false },
-  koopa: { radius: 22, hp: 95, damage: 16, speed: 175, xp: 24, coins: 8, flying: false },
-  wisp: { radius: 18, hp: 60, damage: 14, speed: 130, xp: 20, coins: 6, flying: true },
-  piranha: { radius: 24, hp: 130, damage: 18, speed: 70, xp: 30, coins: 10, flying: false },
-  bowser_boss: { radius: 65, hp: 3200, damage: 32, speed: 100, xp: 600, coins: 150, flying: false },
+  goomba: { radius: 18, hp: 56, damage: 16, speed: 115, xp: 12, coins: 4, flying: false },
+  koopa: { radius: 22, hp: 120, damage: 22, speed: 182, xp: 24, coins: 8, flying: false },
+  wisp: { radius: 18, hp: 82, damage: 18, speed: 135, xp: 20, coins: 6, flying: true },
+  piranha: { radius: 24, hp: 165, damage: 24, speed: 78, xp: 30, coins: 10, flying: false },
+  bowser_boss: { radius: 65, hp: 4400, damage: 38, speed: 108, xp: 550, coins: 150, flying: false },
 };
 
 export class Enemy {
@@ -142,15 +142,23 @@ export class Enemy {
     const dist = Math.hypot(dx, dy);
     this.facingAngle = Math.atan2(dy, dx);
 
-    // Boxhead swarming pathfinding + wall-corner rounding when blocked
+    // True BFS Flow-Field pathfinding for ground enemies -> ZERO wall-corner sticking!
     let targetVx = (dx / (dist || 1)) * this.speed;
     let targetVy = (dy / (dist || 1)) * this.speed;
 
+    if (!this.flying && engine.flowField && dist > 85) {
+      const flow = engine.flowField.sample(this.x, this.y);
+      if (flow) {
+        targetVx = flow.dx * this.speed;
+        targetVy = flow.dy * this.speed;
+      }
+    }
+
     if (this.avoidTimer > 0) {
       this.avoidTimer -= dt;
-      // Strongly follow the wall tangent around the corner, with slight pull toward player
-      targetVx = this.avoidVx * 0.9 + targetVx * 0.22;
-      targetVy = this.avoidVy * 0.9 + targetVy * 0.22;
+      // Blend wall-corner nudge if still brushing a corner edge
+      targetVx = targetVx * 0.7 + this.avoidVx * 0.35;
+      targetVy = targetVy * 0.7 + this.avoidVy * 0.35;
       const spd = Math.hypot(targetVx, targetVy) || 1;
       targetVx = (targetVx / spd) * this.speed;
       targetVy = (targetVy / spd) * this.speed;

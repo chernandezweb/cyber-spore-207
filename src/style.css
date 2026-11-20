@@ -1792,6 +1792,18 @@ kbd,
   font-weight: 800;
 }
 
+.skill-slot.weapon-slot.locked {
+  opacity: 0.42;
+  filter: grayscale(0.8);
+  cursor: not-allowed;
+  border-color: #1e283d;
+}
+
+.skill-slot.weapon-slot.locked:hover {
+  background: var(--surface-2);
+  border-color: #1e283d;
+}
+
 /* ==========================================================================
    SIMPLIFIED, BIG & BOLD MAIN MENU POLISH
    ========================================================================== */

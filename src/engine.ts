@@ -24,6 +24,7 @@ import { renderGame } from './render';
 import { updateHUD, showToast } from './hud';
 import { getPixelAtlas, WORLD_PER_PIXEL } from './pixelArt';
 import { DraftSource, getDraftHeader, rollUpgradeChoices } from './upgrades';
+import { FlowField } from './pathfinding';
 
 export interface Projectile {
   x: number;
@@ -82,6 +83,7 @@ export class GameEngine {
   placedObjects: PlacedObject[] = [];
   teleporter: Teleporter | null = null;
   spawnPoints: { x: number; y: number }[] = [];
+  flowField: FlowField | null = null;
 
   worldWidth = 2400;
   worldHeight = 1800;
@@ -248,7 +250,8 @@ export class GameEngine {
   }
 
   get coeff(): number {
-    return (1 + (this.time / 60) * 0.35) * Math.pow(1.15, this.stage - 1);
+    // True Risk of Rain 2-style accelerating time + stage difficulty coefficient
+    return (1 + (this.time / 60) * 0.48) * Math.pow(1.26, this.stage - 1);
   }
 
   startRun(survivor: SurvivorId, aiEnabled: boolean) {
@@ -281,6 +284,7 @@ export class GameEngine {
     this.placedObjects = [...lvl.barrels];
     this.teleporter = lvl.teleporter;
     this.spawnPoints = lvl.spawnPoints;
+    this.flowField = new FlowField(lvl.width, lvl.height, lvl.walls);
 
     // BUG FIX: Clear ALL floor splats, lingering damage numbers, effects, and vortices on stage change!
     this.bloodSplats = [];
@@ -428,6 +432,7 @@ export class GameEngine {
     if (this.ai.enabled && !p.isDead) this.ai.update(this, dt);
 
     if (!p.isDead) this.updatePlayer(dt);
+    if (this.flowField && !p.isDead) this.flowField.update(p.x, p.y);
     this.updateEnemies(dt);
     if (!p.isDead) this.handlePlayerEnemyCollisions();
     this.updateProjectiles(dt);
@@ -662,7 +667,7 @@ export class GameEngine {
   placeBarrelAtAim() {
     const p = this.player!;
     const w = p.weapons.barrel;
-    if (w.ammo <= 0) return;
+    if (!w.unlocked || w.ammo <= 0) return;
     w.ammo--;
     const dist = 55;
     const bx = p.x + Math.cos(p.aimAngle) * dist - 18;
@@ -685,7 +690,7 @@ export class GameEngine {
   placeBarricadeAtAim() {
     const p = this.player!;
     const w = p.weapons.barricade;
-    if (w.ammo <= 0) return;
+    if (!w.unlocked || w.ammo <= 0) return;
     w.ammo--;
     const dist = 55;
     const bx = p.x + Math.cos(p.aimAngle) * dist - 20;
@@ -1153,9 +1158,9 @@ export class GameEngine {
     p.gainXp(en.xpValue);
     for (const it of p.items) it.onKill?.(p, en, this);
 
-    // Random pickups
-    if (Math.random() < 0.24) this.spawnPickup('ammo', en.x, en.y, 25);
-    else if (Math.random() < 0.08) this.spawnPickup('heal', en.x, en.y, 35);
+    // Random pickups (tighter RoR2 economy so ammo & healing feel earned)
+    if (Math.random() < 0.19) this.spawnPickup('ammo', en.x, en.y, 25);
+    else if (Math.random() < 0.045) this.spawnPickup('heal', en.x, en.y, 30);
 
     const col = en.isBoss ? '#ff0077' : en.type === 'goomba' ? '#00f3ff' : en.type === 'koopa' ? '#39ff14' : '#ff2bd6';
     this.spawnBurst(en.x, en.y, col, en.isBoss ? 75 : 14, en.isBoss ? 520 : 210);
@@ -1255,10 +1260,10 @@ export class GameEngine {
       if (d < p.radius + 18 && !p.isDead) {
         pk.life = 0;
         if (pk.kind === 'ammo') {
-          p.addAmmoToAll(0.35);
+          p.addAmmoToAll(0.25);
           this.addDamageNumber(p.x, p.y - 30, '+AMMO', '#ffbe0b', 1.1);
         } else if (pk.kind === 'heal') {
-          p.heal(p.maxHp * 0.4);
+          p.heal(p.maxHp * 0.30);
           soundEngine.playCoin();
           this.addDamageNumber(p.x, p.y - 30, '+HEALTH', '#39ff14', 1.2);
         } else if (pk.kind === 'star') {

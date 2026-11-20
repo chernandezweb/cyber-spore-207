@@ -61,17 +61,23 @@ export function updateHUD(e: any) {
   set('hud-level', String(p.level));
   set('hud-stats-summary', `DMG x${p.stats.damageMult.toFixed(2)} · CRIT ${Math.round(p.stats.critRate * 100)}% · SPD ${Math.round(p.moveSpeed)}`);
 
-  // Boxhead Weapon Hotbar (1-7)
+  // Boxhead Weapon Hotbar (1-7) — dims locked weapons with 🔒
   for (let i = 0; i < p.weaponOrder.length; i++) {
     const wType = p.weaponOrder[i];
     const w = p.weapons[wType];
     const slot = document.getElementById(`weapon-slot-${i}`);
     if (slot) {
-      slot.classList.toggle('active', i === p.activeWeaponIndex);
+      slot.classList.toggle('active', w.unlocked && i === p.activeWeaponIndex);
+      slot.classList.toggle('locked', !w.unlocked);
       const ammoEl = document.getElementById(`weapon-ammo-${i}`);
       if (ammoEl) {
-        ammoEl.textContent = w.maxAmmo === -1 ? '∞' : String(w.ammo);
-        ammoEl.style.color = w.maxAmmo !== -1 && w.ammo <= 3 ? '#ff4455' : '#ffe066';
+        if (!w.unlocked) {
+          ammoEl.textContent = '🔒';
+          ammoEl.style.color = '#64748b';
+        } else {
+          ammoEl.textContent = w.maxAmmo === -1 ? '∞' : String(w.ammo);
+          ammoEl.style.color = w.maxAmmo !== -1 && w.ammo <= 3 ? '#ff4455' : '#ffe066';
+        }
       }
     }
   }

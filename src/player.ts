@@ -20,7 +20,7 @@ export class Player {
   starTime = 0;
   level = 1;
   xp = 0;
-  xpToNext = 100;
+  xpToNext = 160;
   stats = { damageMult: 1, attackSpeed: 1, critRate: 0, damage: 16 };
   items: RelicItem[] = [];
 
@@ -107,28 +107,48 @@ export class Player {
 
   selectWeapon(slotIndex: number) {
     if (slotIndex >= 0 && slotIndex < this.weaponOrder.length) {
+      const type = this.weaponOrder[slotIndex];
+      if (!this.weapons[type]?.unlocked) return;
       this.activeWeaponIndex = slotIndex;
-      soundEngine.playJump(); // Quick click feedback
+      soundEngine.playJump();
     }
   }
 
   cycleWeapon(dir: number) {
     const total = this.weaponOrder.length;
-    this.activeWeaponIndex = (this.activeWeaponIndex + dir + total) % total;
-    soundEngine.playJump();
+    for (let step = 1; step <= total; step++) {
+      const idx = (this.activeWeaponIndex + dir * step + total * 2) % total;
+      const type = this.weaponOrder[idx];
+      if (this.weapons[type]?.unlocked) {
+        this.activeWeaponIndex = idx;
+        soundEngine.playJump();
+        return;
+      }
+    }
+  }
+
+  unlockWeapon(type: WeaponType) {
+    const w = this.weapons[type];
+    if (!w) return;
+    w.unlocked = true;
+    if (w.maxAmmo !== -1) {
+      w.ammo = Math.min(w.maxAmmo, Math.max(w.ammo, Math.ceil(w.maxAmmo * 0.5)));
+    }
+    const idx = this.weaponOrder.indexOf(type);
+    if (idx >= 0) this.activeWeaponIndex = idx;
   }
 
   addAmmo(type: WeaponType, amount: number) {
     const w = this.weapons[type];
-    if (w && w.maxAmmo !== -1) {
+    if (w && w.unlocked && w.maxAmmo !== -1) {
       w.ammo = Math.min(w.maxAmmo, w.ammo + amount);
     }
   }
 
-  addAmmoToAll(fraction = 0.4) {
+  addAmmoToAll(fraction = 0.25) {
     for (const key of this.weaponOrder) {
       const w = this.weapons[key];
-      if (w.maxAmmo !== -1) {
+      if (w.unlocked && w.maxAmmo !== -1) {
         const amt = Math.max(1, Math.round(w.maxAmmo * fraction));
         w.ammo = Math.min(w.maxAmmo, w.ammo + amt);
       }
@@ -230,10 +250,10 @@ export class Player {
       this.xp -= this.xpToNext;
       this.level++;
       leveled++;
-      this.xpToNext = Math.round(100 * Math.pow(1.35, this.level - 1));
-      this.maxHp += Math.round(this.def.maxHp * 0.18);
-      this.hp = Math.min(this.maxHp, this.hp + Math.round(this.maxHp * 0.4));
-      this.stats.damageMult += 0.08;
+      // Risk of Rain 2-style steeper XP progression (power comes from chosen upgrades & relics!)
+      this.xpToNext = Math.round(160 * Math.pow(1.48, this.level - 1));
+      this.maxHp += Math.round(this.def.maxHp * 0.10);
+      this.hp = Math.min(this.maxHp, this.hp + Math.round(this.maxHp * 0.25));
       this.engine.addDamageNumber(this.x, this.y - 50, `LEVEL ${this.level}!`, '#ffbe0b', 1.6);
       this.engine.spawnBurst(this.x, this.y, '#ffbe0b', 28, 320);
       soundEngine.playRelicPickup();
@@ -273,7 +293,7 @@ export class Player {
       }
     }
 
-    // Passive regen
-    this.heal((1.0 + this.level * 0.2) * dt * (this.outOfCombat > 4 ? 3 : 1), false);
+    // Subtle passive regen (medkits, Super-Shroom & Vampirism matter!)
+    this.heal((0.35 + this.level * 0.05) * dt * (this.outOfCombat > 6 ? 2.0 : 1), false);
   }
 }
